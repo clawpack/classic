@@ -200,6 +200,5 @@ program alloc_test
     state => new_state(grid,2,0)
     call add_grid(solution,grid)
     call add_state(solution,state)
-    read(*,*)
     
 end program alloc_test
