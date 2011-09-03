@@ -113,7 +113,7 @@ contains
             endif
         enddo
         if (i == MAX_GRIDS) then
-            print *,"WARNING:  Did not find specified grid for deletion"
+            print *,"WARNING:  Did not find specified grid for deletion!"
         endif
         
     end subroutine delete_grid
@@ -178,7 +178,7 @@ contains
         implicit none
         type(grid_type), intent(in) :: grid_1,grid_2
         
-        grids_equal = grid_1%grid_no == grid_2%grid_no
+        grids_equal = (grid_1%grid_no == grid_2%grid_no)
         
     end function grids_equal
 

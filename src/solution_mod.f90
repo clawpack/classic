@@ -1,164 +1,248 @@
 module solution_module
 
     implicit none
-    save 
-    
-    ! Function visibility
-!     public new,delete,copy
-!     private new_solution,delete_solution,copy_solution
-!     private new_grid,delete_grid,copy_grid
-!     private new_state,delete_state,copy_state
-    
-    ! Type definitions
-    type grid_type
-        
-        integer, allocatable :: n(:)
-        double precision, allocatable :: d(:),lower(:),upper(:)
-        
-    end type grid_type
-    
-    type state_type
-        private
-        type(grid_type), pointer :: grid
-        double precision :: t
-        
-        double precision, allocatable :: q_work(:)
-        double precision, allocatable :: aux_work(:)
-    end type state_type
-        
-    type solution_type    
-        private
-        
-        type(grid_type), pointer :: grids(:)
-        type(state_type), pointer :: states(:)
-        
-        integer :: last_grid, last_state
-        
-    end type solution_type
-    
-    interface new
-        module procedure new_solution
-        module procedure new_grid
-    end interface new
-    
-    interface delete
-        module procedure delete_solution
-        module procedure delete_grid
-    end interface delete
-    
-    interface copy
-        module procedure copy_solution
-        module procedure copy_grid
-    end interface copy
+    save
     
     ! Global parameter values for solutions, these are kept private
     integer, private, parameter :: MAX_GRIDS = 1000
-    integer, private, parameter :: MAX_LEVELS = 10
-    integer, private, parameter :: MAX_STATES = 1000
+    integer, private, parameter :: MAX_STAGES = 15
+    
+    ! Function specifications
+    interface init
+        module procedure init_solution
+        module procedure init_grid
+        module procedure init_state
+    end interface init
+    interface add
+        module procedure add_grid
+        module procedure add_state
+    end interface add
+    interface delete
+        module procedure delete_grid
+        module procedure delete_state
+    end interface
+!     interface copy
+!         module procedure copy_solution
+!         module procedure copy_grid
+!     end interface copy
+    interface operator(.eq.)
+        module procedure grids_equal
+    end interface operator(.eq.)
+    
+    ! Type definitions
+    type grid_type
+        integer, allocatable :: grid_no
+        integer, allocatable :: level
+        integer, allocatable :: n(:)
+        double precision, allocatable :: d(:),lower(:),upper(:)
+    end type grid_type
+    type, private :: grid_container
+        type(grid_type), pointer :: grid
+    end type
+    
+    type state_type
+        type(grid_type), pointer :: grid
+        double precision, allocatable :: t
+        double precision, allocatable :: q(:,:)
+        double precision, allocatable :: aux(:,:)
+    end type state_type
+    type, private :: state_container
+        type(state_type), pointer :: state
+    end type state_container
+        
+    type solution_type    
+        private
+        logical :: available_grids(MAX_GRIDS)
+        logical :: available_states(MAX_STAGES*MAX_GRIDS)
+        type(grid_container) :: grids(MAX_GRIDS)
+        type(state_container) :: states(MAX_STAGES*MAX_GRIDS)
+    end type solution_type
     
 contains
 
-    subroutine new_solution(self)
+    subroutine init_solution(self)
 
         implicit none
-        type(solution_type), intent(out) :: self
+        type(solution_type), pointer, intent(out) :: self
         
-        ! Initialize positional array values
-        self%last_grid = 0
-        self%last_state = 0
+        if (.not.associated(self)) then
+            allocate(self)
+        endif
+        self%available_grids = .true.
+        self%available_states = .true.
+!         self%grids(:)%grid => null()
+!         self%states(:)%state => null()
         
-    end subroutine new_solution
+    end subroutine init_solution
     
-    subroutine add_grid(self,ndim,n,d,lower,upper)
+    subroutine init_grid(self,ndim,n)
+
         implicit none
+        type(grid_type), pointer, intent(out) :: self
+        integer, intent(in) :: ndim, n(:)
         
-        ! This solution object
-        type(solution_type), intent(in) :: self
+        if (.not.associated(self)) then
+            allocate(self)
+        endif
         
-        ! Input arguments for construction of grid
-        integer, intent(in) :: ndim
-        integer, optional, intent(in) :: n(:)
-        double precision, optional, intent(in) :: d(:)
-        double precision, optional, intent(in) :: lower(:)
-        double precision, optional, intent(in) :: upper(:)
+        allocate(self%n(ndim),self%d(ndim))
+        allocate(self%lower(ndim),self%upper(ndim))
+        self%n = n
+
+    end subroutine init_grid
+    
+    subroutine init_state(self,grid,meqn,maux)
+
+        implicit none
+        type(state_type), pointer, intent(out) :: self
+        type(grid_type), intent(in) :: grid
+        integer, intent(in) :: meqn,maux
         
-        ! Input checks
-        ! Make sure we have not surpassed the end of our pointer list
-        if (last_grid + 1 > MAX_GRIDS) then
-            print *,"Maximum number of grids", MAX_GRIDS," reached."
+        if (.not.associated(self)) then
+            allocate(self)
+        endif
+        
+        allocate(self%q(meqn,1:grid%n(1)))
+        allocate(self%aux(maux,1:grid%n(1)))
+
+    end subroutine init_state
+    
+    subroutine add_grid(self,grid)
+
+        implicit none
+        type(solution_type), intent(inout) :: self
+        type(grid_type), pointer, intent(in) :: grid
+        
+        ! Locals
+        integer :: i
+        
+        do i=1,MAX_GRIDS
+            if (self%available_grids(i)) then
+                self%grids(i)%grid => grid
+                self%available_grids(i) = .false.
+                exit
+            endif
+        enddo
+        if (i == MAX_GRIDS) then
+            print *,"ERROR:  Reached maximum allowed number of grids "
+            print *,"        reached, increase MAX_GRIDS parameter in "
+            print *,"        solution_mod.f90 to fix this problem!"
             stop
-        endif
-        ! Check inputs for correct sizes
-        if (present(n)) then
-            if (len(n) /= ndim) then
-                print *,"Incorrect length of input parameter n,"
-                print *,"found len(n) == ",len(n),", expected ",ndim,"."
-                stop
-            endif
-        endif
-        if (present(d)) then
-            if (len(d) /= ndim) then
-                print *,"Incorrect length of input parameter d,"
-                print *,"found len(d) == ",len(d),", expected ",ndim,"."
-                stop
-            endif
-        endif
-        if (present(lower)) then
-            if (len(lower) /= ndim) then
-                print *,"Incorrect length of input parameter lower,"
-                print *,"found len(lower) == ",len(lower),", expected ",ndim,"."
-                stop
-            endif
-        endif
-        if (present(upper)) then
-            if (len(upper) /= ndim) then
-                print *,"Incorrect length of input parameter upper,"
-                print *,"found len(upper) == ",len(upper),", expected ",ndim,"."
-                stop
-            endif
         endif
 
-        ! Increment last_grid value to point to new grid
-        last_grid = last_grid + 1
-        
-        ! Allocate dimensional arrays
-        allocate(self%grids(last_grid)%n(ndim))
-        allocate(self%grids(last_grid)%d(ndim))
-        allocate(self%grids(last_grid)%lower(ndim))
-        allocate(self%grids(last_grid)%upper(ndim))
-        
-        ! Depending on the input given, assign grid values
-        if (present(n).and.present(lower).and.present(upper)) then
-            self%grids(last_grid)%n = n
-            self%grids(last_grid)%lower = lower
-            self%grids(last_grid)%upper = upper
-            forall (i=1:ndim)
-                self%grids(last_grid)%d = (upper(i) - lower(i)) / n(i)
-            end forall
-        else
-            print *, "Invalid set of parameters given for grid creation."
-            stop
-        endif
-        
     end subroutine add_grid
     
-    subroutine delete_grid(self)
+    subroutine add_state(self,state)
 
         implicit none
-        argument type, intent(inout) :: self
+        type(solution_type), intent(inout) :: self
+        type(state_type), pointer, intent(in) :: state
+        
+        ! Locals
+        integer :: i
+        
+        do i=1,MAX_GRIDS*MAX_STAGES
+            if (self%available_states(i)) then
+                self%states(i)%state => state
+                self%available_states(i) = .false.
+                exit
+            endif
+        enddo
+        if (i == MAX_GRIDS*MAX_STAGES) then
+            print *,"ERROR:  Reached maximum allowed number of states, "
+            print *,"        increase MAX_STAGES parameter in "
+            print *,"        solution_mod.f90 to fix this problem!"
+            stop
+        endif
         
 
-    end subroutine delete_grid
+    end subroutine add_state
     
-    subroutine add_state(self,grid)
+    subroutine delete_grid(self,grid)
+        
         implicit none
         
-        type(solution_type), intent(in) :: self
+        ! Input
+        type(solution_type), intent(inout) :: self
         type(grid_type), intent(in) :: grid
         
-        print *,"Not implemented!"
-        stop
+        ! Locals
+        integer :: i
         
-    end subroutine add_state
+        do i=1,MAX_GRIDS
+            if (.not.self%available_grids(i)) then
+                if (self%grids(i)%grid == grid) then
+                    deallocate(self%grids(i)%grid)
+                    self%available_grids(i) = .false.
+                    exit
+                endif
+            endif
+        enddo
+        if (i == MAX_GRIDS) then
+            print *,"WARNING:  Did not find specified grid for deletion!"
+        endif
+        
+    end subroutine delete_grid
+    
+    subroutine delete_state(self,state)
+        
+        implicit none
+        
+        ! Input
+        type(solution_type), intent(inout) :: self
+        type(state_type), intent(in) :: state
+        
+        ! Locals
+!         integer :: i
+        
+!         do i=1,MAX_GRIDS*MAX_STAGES
+!             if (.not.self%available_states(i)) then
+!                 if (self%states(i)%state == state) then
+!                     deallocate(self%states(i)%state)
+!                     self%available_states(i) = .false.
+!                     exit
+!                 endif
+!             endif
+!         enddo
+!         if (i == MAX_GRIDS*MAX_STAGES) then
+!             print *,"WARNING:  Did not find specified state for deletion!"
+!         endif
+        print *,"WARNING:  Routine has not been implemented!"
+        
+    end subroutine delete_state
+    
+    logical function grids_equal(grid_1,grid_2)
+        implicit none
+        type(grid_type), intent(in) :: grid_1, grid_2
+        
+        grids_equal = (grid_1%grid_no == grid_2%grid_no)
+    end function grids_equal
+    
+    logical function states_equal(state_1,state_2)
+        implicit none
+        type(state_type), intent(in) :: state_1, state_2
+        
+        states_equal = all(state_1%q == state_2%q)
+    end function states_equal
 
 end module solution_module
+
+program solution_test
+
+    use solution_module
+
+    implicit none
+    
+    type(solution_type), pointer :: solution
+    type(grid_type), pointer :: grid
+    type(state_type), pointer :: state
+    
+    call init_solution(solution)
+    call init_grid(grid,1,[10])
+    call init_state(state,grid,1,0)
+
+    call add(solution,grid)
+    call add(solution,state)
+
+end program solution_test
+
