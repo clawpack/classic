@@ -82,9 +82,9 @@ contains
                 exit
             endif
         enddo
-        if (i == MAX_GRIDS) then
+        if (i > MAX_GRIDS) then
             print *,"ERROR:  Reached maximum allowed number of grids "
-            print *,"        reached, increase MAX_GRIDS parameter in "
+            print *,"        increase MAX_GRIDS parameter in "
             print *,"        solution_mod.f90 to fix this problem!"
             stop
         endif
@@ -112,7 +112,7 @@ contains
                 endif
             endif
         enddo
-        if (i == MAX_GRIDS) then
+        if (i > MAX_GRIDS) then
             print *,"WARNING:  Did not find specified grid for deletion!"
         endif
         
@@ -134,7 +134,7 @@ contains
                 exit
             endif
         enddo
-        if (i == MAX_GRIDS*MAX_STAGES) then
+        if (i > MAX_GRIDS*MAX_STAGES) then
             print *,"ERROR:  Reached maximum allowed number of states, "
             print *,"        increase MAX_STAGES parameter in "
             print *,"        solution_mod.f90 to fix this problem!"
