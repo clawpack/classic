@@ -244,6 +244,10 @@ program solution_test
 
     call add(solution,grid)
     call add(solution,state)
+    
+    q = solution_grid(1)
+    aux = solution_state(2)
+    
 
 end program solution_test
 
