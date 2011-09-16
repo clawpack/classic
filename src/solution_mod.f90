@@ -5,7 +5,7 @@ module solution_module
     
     ! Global parameter values for solutions, these are kept private
     integer, private, parameter :: MAX_GRIDS = 1000
-    integer, private, parameter :: MAX_STAGES = 15
+    integer, private, parameter :: MAX_STAGES = 50
     
     ! Function specifications
     interface init
@@ -21,6 +21,10 @@ module solution_module
         module procedure delete_grid
         module procedure delete_state
     end interface
+    interface get
+        module procedure get_grid
+        module procedure get_state
+    end interface get
 !     interface copy
 !         module procedure copy_solution
 !         module procedure copy_grid
@@ -28,7 +32,7 @@ module solution_module
     interface operator(.eq.)
         module procedure grids_equal
     end interface operator(.eq.)
-    
+
     ! Type definitions
     type grid_type
         integer, allocatable :: grid_no
@@ -95,7 +99,7 @@ contains
 
         implicit none
         type(state_type), pointer, intent(out) :: self
-        type(grid_type), intent(in) :: grid
+        type(grid_type), pointer, intent(in) :: grid
         integer, intent(in) :: meqn,maux
         
         if (.not.associated(self)) then
@@ -104,6 +108,8 @@ contains
         
         allocate(self%q(meqn,1:grid%n(1)))
         allocate(self%aux(maux,1:grid%n(1)))
+
+        self%grid => grid
 
     end subroutine init_state
     
@@ -226,6 +232,25 @@ contains
         states_equal = all(state_1%q == state_2%q)
     end function states_equal
 
+    subroutine get_grid(self,grid_no,grid)
+        implicit none
+        integer, intent(in) :: grid_no
+        type(solution_type), intent(in) :: self 
+        type(grid_type), pointer, intent(out) :: grid
+
+        grid = self%grids(grid_no)%grid
+    end subroutine get_grid
+
+    subroutine get_state(self,state_no,state)
+        implicit none
+        type(solution_type), intent(in) :: self
+        integer, intent(in) :: state_no
+        type(state_type), intent(out), pointer :: state
+
+        state = self%states(state_no)%state
+        
+    end subroutine get_state
+
 end module solution_module
 
 program solution_test
@@ -238,9 +263,9 @@ program solution_test
     type(grid_type), pointer :: grid
     type(state_type), pointer :: state
     
-    call init_solution(solution)
-    call init_grid(grid,1,[10])
-    call init_state(state,grid,1,0)
+    call init(solution)
+    call init(grid,1,[10])
+    call init(state,grid,1,0)
 
     call add(solution,grid)
     call add(solution,state)
@@ -248,6 +273,14 @@ program solution_test
     q = solution_grid(1)
     aux = solution_state(2)
     
+
+    call get(solution,1,grid)
+    call get(solution,1,state)
+
+    print *, grid%n(1)
+    print *, state%grid%n
+
+    pause 10
 
 end program solution_test
 
