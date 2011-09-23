@@ -1,6 +1,9 @@
-program stuff
+module rp_swe_module
 
     implicit none
-    
 
-end program stuff
+
+contains
+
+
+end module rp_swe_module
