@@ -1,5 +1,0 @@
-3               = mwaves
-1 1 1           = limiters
-2               = mbc
-1               = bc_lower
-1               = bc_upper
