@@ -18,6 +18,10 @@ module solution_module
 
         ! Solution extents
         integer :: num_cells, num_eqn, num_aux, num_ghost
+        real(kind=8) :: t
+
+        ! Aux array descriptors
+        integer :: capa_index
 
         ! Solution arrays
         real(kind=Q_TYPE), pointer :: q(:,:)
@@ -40,6 +44,9 @@ contains
         solution%num_eqn = num_eqn
         solution%num_aux = num_aux
         solution%num_ghost = num_ghost
+
+        ! Various other parameters - This needs to be set by the user
+        solution%capa_index = 0
 
         ! Allocate memory for the solution arrays
         ! TODO: Probably should use the new solution's data, also should check
