@@ -32,13 +32,18 @@ FFLAGS = -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 LIB_PATH = ../../src/1d
 
 MODULES = \
+	$(LIB_PATH)/clawdata_module.f90 \
 	$(LIB_PATH)/solution_module.f90 \
 	$(LIB_PATH)/solver_module.f90
 
 SOURCES = \
 	./main.f90 \
 	./rp1.f90 \
-	$(LIB_PATH)/step1.f90
+	$(LIB_PATH)/evolve_to_time.f90 \
+	$(LIB_PATH)/step1.f90 \
+	$(LIB_PATH)/before_step.f90 \
+	$(LIB_PATH)/source_term.f90 \
+	$(LIB_PATH)/boundary_conditions.f90
 
 
 # ==============================================================================

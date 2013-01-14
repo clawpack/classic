@@ -25,8 +25,11 @@
 !   |                    s(:,i)                 s(:,i+1)                 |
 !   |                amdq,apdq(:,i)         amdq,apdq(:,i+1)             |
 ! ==============================================================================
-subroutine rp1(num_eqn,num_aux,num_ghost,num_cells,num_wavesql,qr,auxl,auxr, &
+subroutine rp1(num_eqn,num_aux,num_ghost,num_cells,num_waves,ql,qr,auxl,auxr, &
                wave,s,amdq,apdq)
+
+    use solver_module, only: WAVE_TYPE, S_TYPE, ASDQ_TYPE
+    use solution_module, only: Q_TYPE, AUX_TYPE
 
     implicit none
 
