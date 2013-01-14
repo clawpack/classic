@@ -25,7 +25,7 @@ PLOTDIR = _plots               		# Directory for plots
 # ==============================================================================
 # Compiler settings and flags
 FC ?= gfortran
-FFLAGS ?= -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
+FFLAGS = -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
 # ==============================================================================
 # Source lists
@@ -37,6 +37,7 @@ MODULES = \
 
 SOURCES = \
 	./main.f90 \
+	./rp1.f90 \
 	$(LIB_PATH)/step1.f90
 
 
