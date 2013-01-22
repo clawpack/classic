@@ -48,7 +48,7 @@ subroutine step1(solution,solver)
         ! Solve Riemann problem at each interface
         call rp1(solution%num_eqn,              &
                  solution%num_aux,              &
-                 solution%num_ghost,            &
+                 solver%num_ghost,              &
                  solution%num_cells,            &
                  solver%num_waves,              &
                  q, q,                          &

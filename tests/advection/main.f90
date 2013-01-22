@@ -18,5 +18,7 @@ program advection1d
     solver = new_solver(clawdata)
 
     call evolve_to_time(clawdata%t_final,solution,solver)
+
+    call output_solution(solution, 0.d0, 0, .false., './')
  
 end program advection1d
