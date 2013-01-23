@@ -15,7 +15,7 @@ SHELL = /bin/sh
 INSTALL_PROGRAM ?= $(INSTALL)
 INSTALL_DATA ?= $(INSTALL) -m 644
 
-CLAW_PKG = clawpack                 # Clawpack package to use
+CLAW_PKG = classic                  # Clawpack package to use
 EXE = advection1d                 	# Executable to create
 SETRUN_FILE = setrun.py        		# File containing function to make data
 OUTDIR = _output               		# Directory for output
@@ -29,21 +29,22 @@ FFLAGS = -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
 # ==============================================================================
 # Source lists
-LIB_PATH = ../../src/1d
+LIB_PATH = ../../src
 
 MODULES = \
 	$(LIB_PATH)/clawdata_module.f90 \
-	$(LIB_PATH)/solution_module.f90 \
-	$(LIB_PATH)/solver_module.f90
+	$(LIB_PATH)/1d/solution_module.f90 \
+	$(LIB_PATH)/1d/solver_module.f90
 
 SOURCES = \
 	./main.f90 \
 	./rp1.f90 \
-	$(LIB_PATH)/evolve_to_time.f90 \
-	$(LIB_PATH)/step1.f90 \
-	$(LIB_PATH)/before_step.f90 \
-	$(LIB_PATH)/source_term.f90 \
-	$(LIB_PATH)/boundary_conditions.f90
+	$(LIB_PATH)/1d/evolve_to_time.f90 \
+	$(LIB_PATH)/1d/step1.f90 \
+	$(LIB_PATH)/1d/before_step.f90 \
+	$(LIB_PATH)/1d/source_term.f90 \
+	$(LIB_PATH)/1d/boundary_conditions.f90 \
+	$(LIB_PATH)/open_data_file.f90
 
 
 # ==============================================================================

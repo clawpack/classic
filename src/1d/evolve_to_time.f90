@@ -23,7 +23,7 @@ subroutine evolve_to_time(t_end,solution,solver)
     t_start = solution%t
 
     ! Primary Loop
-    primary_loop: do num_steps=1,solver%max_num_steps
+    primary_loop: do num_steps=1,solver%steps_max
 
         t_old = solution%t
         t_new = solution%t + solver%dt
@@ -52,7 +52,7 @@ subroutine evolve_to_time(t_end,solution,solver)
         endif
 
         ! Take a single-step on the homogeneous conservation law
-        call step1()
+        call hyperbolic_step(solution,solver)
 
         ! Take a step on the source term, if Strang splitting used take another
         ! half time step, if Godunov splitting take a full time step

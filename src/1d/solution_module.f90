@@ -17,8 +17,8 @@ module solution_module
     type solution_type
 
         ! Solution extents
-        integer :: num_cells, num_eqn, num_aux
-        real(kind=8) :: t, dx, lower, upper
+        integer :: num_cells(1), num_eqn, num_aux
+        real(kind=8) :: t, dx, lower(1), upper(1)
 
         ! Aux array descriptors
         integer :: capa_index
@@ -30,7 +30,6 @@ module solution_module
     end type solution_type
 
 contains
-
 
 
     type(solution_type) function new_solution(clawdata) result(solution)
@@ -49,7 +48,7 @@ contains
         solution%num_aux = clawdata%num_aux
         solution%lower = clawdata%lower
         solution%upper = clawdata%upper
-        solution%dx = (solution%upper - solution%lower) / solution%num_cells
+        solution%dx = (solution%upper(1) - solution%lower(1)) / solution%num_cells(1)
 
         ! Set initial time
         solution%t = clawdata%t0
@@ -60,7 +59,7 @@ contains
         ! Allocate memory for the solution arrays
         associate(num_eqn => clawdata%num_eqn, &
                   num_ghost => clawdata%num_ghost, &
-                  num_cells => clawdata%num_cells, &
+                  num_cells => clawdata%num_cells(1), &
                   num_aux => clawdata%num_aux)
 
             allocate(solution%q(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
@@ -122,13 +121,13 @@ contains
 
         ! Loop through q array fixing any exponents with more than 2 digits in 
         ! exponent cause problems, reset tiny value to zero
-        forall(i=1:solution%num_cells, m=1:solution%num_eqn, &
+        forall(i=1:solution%num_cells(1), m=1:solution%num_eqn, &
                abs(solution%q(m,i)) < 1d-99)
             solution%q(m,i) = 0.d0
         end forall
 
         ! Write out each line
-        do i=1,solution%num_cells
+        do i=1,solution%num_cells(1)
             write(IOUNIT,q_output_format) (solution%q(m,i), m=1,solution%num_eqn)
         enddo
 

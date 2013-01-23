@@ -10,12 +10,12 @@ subroutine set_boundary_conditions(solution,solver)
 
     integer :: i, m
 
-    associate(num_cells => solution%num_cells, &
+    associate(num_cells => solution%num_cells(1), &
               num_ghost => solver%num_ghost, &
               q => solution%q)
 
         ! Lower boundary
-        select case (solver%bc_lower)
+        select case (solver%bc_lower(1))
             case (0)
                 stop "User defined boundary condintion requested but not implemented."
             case (1)
@@ -39,7 +39,7 @@ subroutine set_boundary_conditions(solution,solver)
         end select
 
         ! Upper boundary
-        select case (solver%bc_upper)
+        select case (solver%bc_upper(1))
             case (0)
                 stop "User defined boundary condintion requested but not implemented."
             case (1)

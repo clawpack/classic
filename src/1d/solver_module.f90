@@ -28,13 +28,13 @@ module solver_module
 
         ! Solver parameters
         integer :: order, transverse_waves, dimensional_split, source_split
-        integer :: num_waves, verbosity, max_num_steps
+        integer :: num_waves, verbosity, steps_max
         integer, allocatable :: limiter(:)
         real(kind=8) :: dt_max_allowed, cfl_max_allowed, cfl_desired
         logical :: use_fwaves, dt_variable
 
         ! Boundary conditions
-        integer :: num_ghost, bc_lower, bc_upper
+        integer :: num_ghost, bc_lower(1), bc_upper(1)
 
         ! Memory storage for this solver
         real(kind=F_TYPE), pointer :: f(:,:)
@@ -65,7 +65,7 @@ contains
         integer :: stat
 
         ! Solver parameters
-        solver%max_num_steps = clawdata%max_num_steps
+        solver%steps_max = clawdata%steps_max
         solver%dt_max_allowed = clawdata%dt_max_allowed
         solver%cfl_desired = clawdata%cfl_desired
         solver%cfl_max_allowed = solver%cfl_max_allowed
@@ -87,7 +87,7 @@ contains
         solver%num_waves = clawdata%num_waves
 
         associate(num_eqn => clawdata%num_eqn, &
-                  num_cells => clawdata%num_cells, &
+                  num_cells => clawdata%num_cells(1), &
                   num_ghost => clawdata%num_ghost, &
                   num_waves => clawdata%num_waves)
 
