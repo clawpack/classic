@@ -47,7 +47,7 @@ subroutine evolve_to_time(t_end,solution,solver)
         call before_step(solution,solver)
 
         ! If Strang splitting is used take a step on the source term
-        if (solver%source_split == 2) then
+        if (solver%source_splitting == 2) then
             call source_term(t_old, solver%dt / 2.d0, solution, solver)
         endif
 
@@ -56,9 +56,9 @@ subroutine evolve_to_time(t_end,solution,solver)
 
         ! Take a step on the source term, if Strang splitting used take another
         ! half time step, if Godunov splitting take a full time step
-        if (solver%source_split == 1) then
+        if (solver%source_splitting == 1) then
             call source_term(solution%t + solver%dt,solver%dt,solution,solver)
-        else if (solver%source_split == 2) then
+        else if (solver%source_splitting == 2) then
             call source_term(solution%t + solver%dt * 0.5d0,solver%dt * 0.5d0,solution,solver)
         end if
 

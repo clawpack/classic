@@ -19,6 +19,37 @@ module solver_module
     integer, parameter :: S_TYPE = kind(1.d0)
     integer, parameter :: DTDX_TYPE = kind(1.d0)
 
+    ! Riemann Solver abstract interface
+    abstract interface   
+
+        subroutine rp(num_eqn,num_aux,num_ghost,num_cells,num_waves,ql,qr, &
+                       auxl,auxr,wave,s,amdq,apdq)
+
+!             use solver_module, only: WAVE_TYPE, S_TYPE, ASDQ_TYPE
+            use solution_module, only: Q_TYPE, AUX_TYPE
+
+            implicit none
+
+            integer, parameter :: ASDQ_TYPE = kind(1.d0)
+            integer, parameter :: WAVE_TYPE = kind(1.d0)
+            integer, parameter :: S_TYPE = kind(1.d0)
+
+            ! Input Arguments
+            integer, intent(in) :: num_eqn, num_aux, num_ghost, num_cells, num_waves
+            real(kind=Q_TYPE), intent(in) :: ql(num_eqn,1-num_ghost:num_cells+num_ghost)
+            real(kind=Q_TYPE), intent(in) :: qr(num_eqn,1-num_ghost:num_cells+num_ghost)
+            real(kind=AUX_TYPE), intent(in) :: auxl(num_aux,1-num_ghost:num_cells+num_ghost)
+            real(kind=AUX_TYPE), intent(in) :: auxr(num_aux,1-num_ghost:num_cells+num_ghost)
+
+            ! Output Arguments
+            real(kind=WAVE_TYPE), intent(in out) :: wave(num_eqn,num_waves,1-num_ghost:num_cells+num_ghost)
+            real(kind=S_TYPE), intent(in out) :: s(num_waves,1-num_ghost:num_cells+num_ghost)
+            real(kind=ASDQ_TYPE), intent(in out) :: amdq(num_eqn,1-num_ghost:num_cells+num_ghost)
+            real(kind=ASDQ_TYPE), intent(in out) :: apdq(num_eqn,1-num_ghost:num_cells+num_ghost)
+
+        end subroutine rp
+    end interface
+
     ! Solver type declaration
     type solver_type
         
@@ -27,7 +58,7 @@ module solver_module
         real(kind=8) :: dt_min, dt_max, cfl, cfl_max, dt
 
         ! Solver parameters
-        integer :: order, transverse_waves, dimensional_split, source_split
+        integer :: order, transverse_waves, dimensional_split, source_splitting
         integer :: num_waves, verbosity, steps_max
         integer, allocatable :: limiter(:)
         real(kind=8) :: dt_max_allowed, cfl_max_allowed, cfl_desired
@@ -44,47 +75,56 @@ module solver_module
         real(kind=DTDX_TYPE), pointer :: dtdx(:)
 
         real(kind=Q_TYPE), pointer :: q_old(:,:)
+        
+        ! Function pointer to Riemann solver
+        procedure (rp), nopass, pointer :: rp1
 
     end type solver_type
 
+    interface new
+        module procedure new_solver
+    end interface
+
 contains
 
-    function new_solver(clawdata) result(solver)
+    subroutine new_solver(self, clawdata)
 
         use clawdata_module, only: clawdata_type
 
         implicit none
 
         ! Input
-        type(clawdata_type) :: clawdata
-
-        ! Output
-        type(solver_type) :: solver
+        type(solver_type), intent(out) :: self
+        type(clawdata_type), intent(in) :: clawdata
 
         ! Locals
         integer :: stat
 
         ! Solver parameters
-        solver%steps_max = clawdata%steps_max
-        solver%dt_max_allowed = clawdata%dt_max_allowed
-        solver%cfl_desired = clawdata%cfl_desired
-        solver%cfl_max_allowed = solver%cfl_max_allowed
+        self%order = clawdata%order
+        self%source_splitting = clawdata%source_splitting
+        self%use_fwaves = clawdata%use_fwaves
+
+        self%steps_max = clawdata%steps_max
+        self%dt_max_allowed = clawdata%dt_max_allowed
+        self%cfl_desired = clawdata%cfl_desired
+        self%cfl_max_allowed = clawdata%cfl_max_allowed
 
         ! Boundary conditions
-        solver%num_ghost = clawdata%num_ghost
-        solver%bc_lower = clawdata%bc_lower
-        solver%bc_upper = clawdata%bc_upper
+        self%num_ghost = clawdata%num_ghost
+        self%bc_lower = clawdata%bc_lower
+        self%bc_upper = clawdata%bc_upper
 
         ! Initialize solver status
-        solver%num_steps = 0
-        solver%dt_min = huge(1.d0)
-        solver%dt_max = tiny(1.d0)
-        solver%cfl = clawdata%cfl_desired
-        solver%cfl_max = tiny(1.d0)
-        solver%dt = clawdata%dt_init
+        self%num_steps = 0
+        self%dt_min = huge(1.d0)
+        self%dt_max = tiny(1.d0)
+        self%cfl = clawdata%cfl_desired
+        self%cfl_max = tiny(1.d0)
+        self%dt = clawdata%dt_init
 
         ! Allocate solver work arrays
-        solver%num_waves = clawdata%num_waves
+        self%num_waves = clawdata%num_waves
 
         associate(num_eqn => clawdata%num_eqn, &
                   num_cells => clawdata%num_cells(1), &
@@ -92,22 +132,25 @@ contains
                   num_waves => clawdata%num_waves)
 
         ! Based on number of waves and solution parameters allocate work arrays
-        allocate(solver%f(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
+        allocate(self%f(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
         if (stat /= 0) stop "Allocation of f failed."
-        allocate(solver%apdq(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
+        allocate(self%apdq(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
         if (stat /= 0) stop "Allocation of apdq failed."
-        allocate(solver%amdq(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
+        allocate(self%amdq(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
         if (stat /= 0) stop "Allocation of amdq failed."
-        allocate(solver%wave(num_eqn,num_waves,1-num_ghost:num_cells+num_ghost),stat=stat)
+        allocate(self%wave(num_eqn,num_waves,1-num_ghost:num_cells+num_ghost),stat=stat)
         if (stat /= 0) stop "Allocation of wave failed."
-        allocate(solver%s(num_waves,1-num_ghost:num_cells+num_ghost),stat=stat)
+        allocate(self%s(num_waves,1-num_ghost:num_cells+num_ghost),stat=stat)
         if (stat /= 0) stop "Allocation of s failed."
-        allocate(solver%dtdx(1-num_ghost:num_cells+num_ghost),stat=stat)
+        allocate(self%dtdx(1-num_ghost:num_cells+num_ghost),stat=stat)
         if (stat /= 0) stop "Allocation of dtdx failed."
         
         end associate
 
-    end function new_solver
+        ! Set the Riemann solver function pointer to null to avoid confusion
+        self%rp1 => null()
+
+    end subroutine new_solver
 
     subroutine choose_new_dt(solver)
 

@@ -10,6 +10,7 @@ module clawdata_module
         integer, allocatable :: num_cells(:)
 
         ! Domain specification
+        integer :: capa_index
         real(kind=8) :: t0
         real(kind=8), allocatable :: lower(:), upper(:)
 
@@ -23,7 +24,7 @@ module clawdata_module
 
         ! Solver attributes
         integer :: steps_max, order, transverse_waves, dimensional_split
-        integer :: source_splitting, capa_index, num_waves, verbosity
+        integer :: source_splitting, num_waves, verbosity
         logical :: dt_variable, use_fwaves
         real(kind=8) :: cfl_max_allowed, cfl_desired, dt_max_allowed, dt_init
         real(kind=8), allocatable :: limiters(:)
@@ -38,14 +39,21 @@ module clawdata_module
 
     end type clawdata_type
 
+    interface new
+        module procedure new_clawdata
+    end interface new
 
 contains
 
-    type(clawdata_type) function read_data_file(path) result(clawdata)
+    subroutine new_clawdata(self,path)
         
         implicit none
 
+        ! Input
         character(len=*), intent(in), optional :: path
+
+        ! Output
+        type(clawdata_type), intent(out) :: self
 
         ! Locals
         integer, parameter :: iounit = 55
@@ -59,101 +67,103 @@ contains
         end if
 
         ! Begin reading file
-        read(iounit,'(i2)') clawdata%num_dim
-        if (clawdata%num_dim /= 1) then
+        read(iounit,'(i2)') self%num_dim
+        if (self%num_dim /= 1) then
             stop "Dimension is not 1, wrong data source files used."
         end if
-
-        ! Allocate all variable dimension arrays
-        allocate(clawdata%num_cells(clawdata%num_dim), stat=err)
-        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
-        allocate(clawdata%lower(clawdata%num_dim), stat=err)
-        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
-        allocate(clawdata%upper(clawdata%num_dim), stat=err)
-        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
-        allocate(clawdata%bc_lower(clawdata%num_dim), stat=err)
-        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
-        allocate(clawdata%bc_upper(clawdata%num_dim), stat=err)
-        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
         
         ! Domain
-        read(iounit,*) clawdata%lower
-        read(iounit,*) clawdata%upper
-        read(iounit,*) clawdata%num_cells
-        if (.not. all(clawdata%num_cells > 0, dim=1)) stop "Need number of cells > 0."
+        allocate(self%lower(self%num_dim), stat=err)
+        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
+        read(iounit,*) self%lower
+        allocate(self%upper(self%num_dim), stat=err)
+        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
+        read(iounit,*) self%upper
+        allocate(self%num_cells(self%num_dim), stat=err)
+        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
+        read(iounit,*) self%num_cells
+        if (.not. all(self%num_cells > 0, dim=1)) stop "Need number of cells > 0."
         read(iounit,*)
 
         ! Base array sizes
-        read(iounit,*) clawdata%num_eqn
-        read(iounit,*) clawdata%num_waves
-        read(iounit,*) clawdata%num_aux
+        read(iounit,*) self%num_eqn
+        read(iounit,*) self%num_waves
+        read(iounit,*) self%num_aux
         read(iounit,*)
 
-        read(iounit,*) clawdata%t0
+        read(iounit,*) self%t0
         read(iounit,*)
 
         ! I/O Controls
-        read(iounit,*) clawdata%output_style
-        if (clawdata%output_style == 1) then
-            read(iounit,*) clawdata%num_output_times
-            read(iounit,*) clawdata%t_final
-            read(iounit,*) clawdata%output_t0
-        else if (clawdata%output_style == 2) then
-            read(iounit,*) clawdata%num_output_times
-            allocate(clawdata%t_out(clawdata%num_output_times),stat=stat)
+        read(iounit,*) self%output_style
+        if (self%output_style == 1) then
+            read(iounit,*) self%num_output_times
+            read(iounit,*) self%t_final
+            read(iounit,*) self%output_t0
+        else if (self%output_style == 2) then
+            read(iounit,*) self%num_output_times
+            allocate(self%t_out(self%num_output_times),stat=stat)
             if (stat /= 0) stop "Allocation of t_out failed!"
-            read(iounit,*) (clawdata%t_out(i), i=1,clawdata%num_output_times)
-        else if (clawdata%output_style == 3) then
-            read(iounit,*) clawdata%output_step_interval
-            read(iounit,*) clawdata%total_steps
-            read(iounit,*) clawdata%output_t0
+            read(iounit,*) (self%t_out(i), i=1,self%num_output_times)
+        else if (self%output_style == 3) then
+            read(iounit,*) self%output_step_interval
+            read(iounit,*) self%total_steps
+            read(iounit,*) self%output_t0
         else
             stop "Output style > 3 unimplemented."
         end if
         read(iounit,*)
 
         ! Output details
-        read(iounit,*) clawdata%output_format
-        read(iounit,*) clawdata%output_q_components
-        if (clawdata%num_aux > 0) then
-            read(iounit,*) clawdata%output_aux_components
-            read(iounit,*) clawdata%output_aux_onlyonce
+        read(iounit,*) self%output_format
+        allocate(self%output_q_components(self%num_eqn), stat=stat)
+        if (stat /= 0) stop "Allocation of output_q_components failed!" 
+        allocate(self%output_aux_components(self%num_aux), stat=stat)
+        if (stat /= 0) stop "Allocation of output_aux_components failed!" 
+        read(iounit,*) self%output_q_components
+        if (self%num_aux > 0) then
+            read(iounit,*) self%output_aux_components
+            read(iounit,*) self%output_aux_onlyonce
         endif
         read(iounit,*)
 
         ! Time Stepping controls
-        read(iounit,*) clawdata%dt_init
-        read(iounit,*) clawdata%dt_max_allowed
-        read(iounit,*) clawdata%cfl_max_allowed
-        read(iounit,*) clawdata%cfl_desired
-        read(iounit,*) clawdata%steps_max
+        read(iounit,*) self%dt_init
+        read(iounit,*) self%dt_max_allowed
+        read(iounit,*) self%cfl_max_allowed
+        read(iounit,*) self%cfl_desired
+        read(iounit,*) self%steps_max
         read(iounit,*)
 
         ! Input parameters for clawpack algorithms
-        read(iounit,*) clawdata%dt_variable
-        read(iounit,*) clawdata%order
-        if (clawdata%num_dim > 1) then
-            read(iounit,*) clawdata%transverse_waves
-            read(iounit,*) clawdata%dimensional_split
+        read(iounit,*) self%dt_variable
+        read(iounit,*) self%order
+        if (self%num_dim > 1) then
+            read(iounit,*) self%transverse_waves
+            read(iounit,*) self%dimensional_split
         endif
-        read(iounit,*) clawdata%verbosity
-        read(iounit,*) clawdata%source_splitting
-        read(iounit,*) clawdata%capa_index
-        read(iounit,*) clawdata%use_fwaves
+        read(iounit,*) self%verbosity
+        read(iounit,*) self%source_splitting
+        read(iounit,*) self%capa_index
+        read(iounit,*) self%use_fwaves
         read(iounit,*)
 
         ! Limiters to be used
-        allocate(clawdata%limiters(clawdata%num_waves),stat=stat)
+        allocate(self%limiters(self%num_waves),stat=stat)
         if (stat /= 0) stop "Allocation of limiters array failed!"
-        read(iounit,*) (clawdata%limiters(mw), mw=1,clawdata%num_waves)
+        read(iounit,*) (self%limiters(mw), mw=1,self%num_waves)
         read(iounit,*)
 
         ! Boundary conditions
-        read(iounit,*) clawdata%num_ghost
-        read(iounit,*) clawdata%bc_lower
-        read(iounit,*) clawdata%bc_upper
-        if ((clawdata%bc_lower(1) == 2 .and. clawdata%bc_upper(1) /= 2) .or.  &
-            (clawdata%bc_lower(1) /= 2 .and. clawdata%bc_upper(1) == 2)) then
+        read(iounit,*) self%num_ghost
+        allocate(self%bc_lower(self%num_dim), stat=stat)
+        if (stat /= 0) stop "Allocation of bc_lower failed!"
+        read(iounit,*) self%bc_lower
+        allocate(self%bc_upper(self%num_dim), stat=stat)
+        if (stat /= 0) stop "Allocation of bc_upper failed!"
+        read(iounit,*) self%bc_upper
+        if ((self%bc_lower(1) == 2 .and. self%bc_upper(1) /= 2) .or.  &
+            (self%bc_lower(1) /= 2 .and. self%bc_upper(1) == 2)) then
 
             print *, "Periodic boundary conditions requested but bc_lower and"
             print *, "bc_upper were not BOTH set to 2."
@@ -161,11 +171,11 @@ contains
         end if
 
         ! Restart settings
-        read(iounit,*) clawdata%restart
-        read(iounit,*) clawdata%restart_file
+        read(iounit,*) self%restart
+        read(iounit,*) self%restart_file
 
         close(iounit)
 
-    end function read_data_file
+    end subroutine new_clawdata
 
 end module clawdata_module

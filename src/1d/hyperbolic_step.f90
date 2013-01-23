@@ -20,25 +20,25 @@ subroutine hyperbolic_step(solution,solver)
     associate(q => solution%q, aux => solution%aux)
 
         ! Solve Riemann problem at each interface
-        call rp1(solution%num_eqn,              &
-                 solution%num_aux,              &
-                 solver%num_ghost,              &
-                 solution%num_cells(1),         &
-                 solver%num_waves,              &
-                 q, q,                          &
-                 aux, aux,                      &
-                 solver%wave,                   &
-                 solver%s,                      &
-                 solver%amdq,                   &
-                 solver%apdq)
+        call solver%rp1(solution%num_eqn,              &
+                        solution%num_aux,              &
+                        solver%num_ghost,              &
+                        solution%num_cells(1),         &
+                        solver%num_waves,              &
+                        q, q,                          &
+                        aux, aux,                      &
+                        solver%wave,                   &
+                        solver%s,                      &
+                        solver%amdq,                   &
+                        solver%apdq)
 
         ! Calculate dt/dx ratio, handles non-uniform grids
         if (solution%capa_index == 0) then
             ! Uniform grid being used, set dtdx(:) = dt/dx
-            solver%dtdx = solver%dt / solution%dx
+            solver%dtdx = solver%dt / solution%dx(1)
         else
             ! Use capacity function to compute spatially variable dx
-            solver%dtdx = solver%dt / (solution%dx * aux(:,solution%capa_index))
+            solver%dtdx = solver%dt / (solution%dx(1)*aux(:,solution%capa_index))
         endif
 
         ! Modify q for Godunov update

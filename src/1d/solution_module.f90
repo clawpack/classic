@@ -17,8 +17,10 @@ module solution_module
     type solution_type
 
         ! Solution extents
-        integer :: num_cells(1), num_eqn, num_aux
-        real(kind=8) :: t, dx, lower(1), upper(1)
+        integer :: num_dim, num_eqn, num_aux
+        integer, allocatable :: num_cells(:)
+        real(kind=8) :: t
+        real(kind=8), allocatable :: dx(:), lower(:), upper(:), centers(:)
 
         ! Aux array descriptors
         integer :: capa_index
@@ -29,32 +31,46 @@ module solution_module
         
     end type solution_type
 
+    interface new
+        module procedure new_solution
+    end interface
+
 contains
 
 
-    type(solution_type) function new_solution(clawdata) result(solution)
+    subroutine new_solution(self,clawdata)
 
         use clawdata_module, only: clawdata_type
 
         implicit none
 
-        type(clawdata_type), intent(in) :: clawdata
+        ! Input
+        type(solution_type), intent(out) :: self
+        type(clawdata_type) :: clawdata
 
-        integer :: stat
+        integer :: stat, i
 
         ! Set new solution object's array extents
-        solution%num_cells = clawdata%num_cells
-        solution%num_eqn = clawdata%num_eqn
-        solution%num_aux = clawdata%num_aux
-        solution%lower = clawdata%lower
-        solution%upper = clawdata%upper
-        solution%dx = (solution%upper(1) - solution%lower(1)) / solution%num_cells(1)
+        self%num_dim = clawdata%num_dim
+        allocate(self%num_cells(self%num_dim), stat=stat)
+        if (stat /= 0) stop "Allocation request denied for num_cells"
+        self%num_cells = clawdata%num_cells
+        self%num_eqn = clawdata%num_eqn
+        self%num_aux = clawdata%num_aux
+
+        ! Domain
+        allocate(self%lower(self%num_dim), stat=stat)
+        if (stat /= 0) print *, "Allocation request denied!"
+        self%lower = clawdata%lower
+        allocate(self%upper(self%num_dim), stat=stat)
+        if (stat /= 0) print *, "Allocation request denied!"
+        self%upper = clawdata%upper
 
         ! Set initial time
-        solution%t = clawdata%t0
+        self%t = clawdata%t0
 
-        ! Various other parameters - This needs to be set by the user
-        solution%capa_index = clawdata%capa_index
+        ! Various other parameters
+        self%capa_index = clawdata%capa_index
 
         ! Allocate memory for the solution arrays
         associate(num_eqn => clawdata%num_eqn, &
@@ -62,16 +78,25 @@ contains
                   num_cells => clawdata%num_cells(1), &
                   num_aux => clawdata%num_aux)
 
-            allocate(solution%q(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
+            ! Allocate primary arrays
+            allocate(self%q(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
             if (stat /= 0) stop "Allocation of solutions's q array failed!"
-            allocate(solution%aux(num_aux,1-num_ghost:num_cells+num_ghost),stat=stat)
+            allocate(self%aux(num_aux,1-num_ghost:num_cells+num_ghost),stat=stat)
             if (stat /= 0) stop "Allocation of solutions's aux array failed!"
+
+            ! Calculated values
+            allocate(self%dx(self%num_dim), stat=stat)
+            if (stat /= 0) stop "Allocation of solution's dx array failed!"
+            self%dx(1) = (self%upper(1) - self%lower(1)) / num_cells
+            allocate(self%centers(1-num_ghost:num_cells+num_ghost),stat=stat)
+            if (stat /= 0) stop "Allocation of solutions's centers array failed!"
+            forall(i=1-num_ghost:num_cells+num_ghost)
+                self%centers(i) = self%lower(1) + (i-0.5d0) * self%dx(1)
+            end forall
 
         end associate
         
-    end function new_solution
-
-
+    end subroutine new_solution
 
 
     subroutine output_solution(solution,t,frame,output_aux,path)
@@ -106,10 +131,15 @@ contains
                                          "i5,'                 maux'/,"     // &
                                          "i5,'                 ndim'/,/)"
 
-        q_output_format = "(" // char(solution%num_eqn) // "e16.8)"
+        write(q_output_format,"('(',i2,'e16.8)')") solution%num_eqn
 
         ! Construct paths to output files and open them
-        q_file_name = path // construct_file_name(frame,'fort.q')
+        if (present(path)) then
+            q_file_name = path // construct_file_name(frame,'fort.q')
+        else
+            q_file_name = "./_output/" // construct_file_name(frame,'fort.q')
+        endif
+        q_file_name = construct_file_name(frame,'fort.q')
         open(IOUNIT,file=q_file_name,status='unknown',form='formatted')
 
         ! Write q file header
@@ -134,7 +164,7 @@ contains
         close(IOUNIT)
 
         ! Write out fort.t file                                         
-        t_file_name = path // construct_file_name(frame,'fort.t')
+        t_file_name = construct_file_name(frame,'fort.t')
         open(IOUNIT,file=t_file_name,status='unknown',form='formatted')
 
         write(IOUNIT,T_HEADER_FORMAT)                t,     &

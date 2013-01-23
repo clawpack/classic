@@ -34,13 +34,14 @@ LIB_PATH = ../../src
 MODULES = \
 	$(LIB_PATH)/clawdata_module.f90 \
 	$(LIB_PATH)/1d/solution_module.f90 \
-	$(LIB_PATH)/1d/solver_module.f90
+	$(LIB_PATH)/1d/solver_module.f90 \
+	$(LIB_PATH)/1d/rp1_interface.f90 \
+	./rp1_advection.f90
 
 SOURCES = \
 	./main.f90 \
-	./rp1.f90 \
 	$(LIB_PATH)/1d/evolve_to_time.f90 \
-	$(LIB_PATH)/1d/step1.f90 \
+	$(LIB_PATH)/1d/hyperbolic_step.f90 \
 	$(LIB_PATH)/1d/before_step.f90 \
 	$(LIB_PATH)/1d/source_term.f90 \
 	$(LIB_PATH)/1d/boundary_conditions.f90 \
