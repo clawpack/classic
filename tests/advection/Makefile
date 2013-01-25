@@ -32,6 +32,7 @@ FFLAGS = -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 LIB_PATH = ../../src
 
 MODULES = \
+	$(LIB_PATH)/precision_module.f90 \
 	$(LIB_PATH)/clawdata_module.f90 \
 	$(LIB_PATH)/1d/solution_module.f90 \
 	$(LIB_PATH)/1d/solver_module.f90 \
