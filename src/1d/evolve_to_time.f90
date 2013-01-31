@@ -1,14 +1,15 @@
-subroutine evolve_to_time(t_end,solution,solver)
+subroutine evolve_to_time(t_end, solution, solver, single_step)
     
     use solution_module, only: solution_type
     use solver_module, only: solver_type, choose_new_dt, check_CFL
 
     implicit none
 
+    ! Arguments
     real(kind=8), intent(in) :: t_end
-
     type(solution_type), intent(in out) :: solution
     type(solver_type), intent(in out) :: solver
+    logical, optional, intent(in) :: single_step
 
     ! Locals
     integer :: num_steps
@@ -21,6 +22,11 @@ subroutine evolve_to_time(t_end,solution,solver)
     ! Initialize status storage
     num_steps = 0
     t_start = solution%t
+
+    ! Support single stepping mode
+    if (present(single_step)) then
+        if (single_step) solver%steps_max = 1
+    endif
 
     ! Primary Loop
     primary_loop: do num_steps=1,solver%steps_max

@@ -20,17 +20,28 @@ subroutine hyperbolic_step(solution,solver)
     associate(q => solution%q, aux => solution%aux)
 
         ! Solve Riemann problem at each interface
-        call solver%rp1(solution%num_eqn,              &
-                        solution%num_aux,              &
-                        solver%num_ghost,              &
-                        solution%num_cells(1),         &
-                        solver%num_waves,              &
-                        q, q,                          &
-                        aux, aux,                      &
-                        solver%wave,                   &
-                        solver%s,                      &
-                        solver%amdq,                   &
-                        solver%apdq)
+!         call solver%rp1(solution%num_eqn,              &
+!                         solution%num_aux,              &
+!                         solver%num_ghost,              &
+!                         solution%num_cells(1),         &
+!                         solver%num_waves,              &
+!                         q, q,                          &
+!                         aux, aux,                      &
+!                         solver%wave,                   &
+!                         solver%s,                      &
+!                         solver%amdq,                   &
+!                         solver%apdq)
+        do i=2-solver%num_ghost,solution%num_cells(1)+solver%num_ghost
+            call solver%rp1(solution%num_eqn,               &
+                            solution%num_aux,               &
+                            solver%num_waves,               &
+                            q(:,i-1), q(:,i),               &
+                            aux(:,i-1), aux(:,i),           &
+                            solver%wave(:,:,i),             &
+                            solver%s(:,i),                  &
+                            solver%amdq(:,i),               &
+                            solver%apdq(:,i))
+        end do
 
         ! Calculate dt/dx ratio, handles non-uniform grids
         if (solution%capa_index == 0) then

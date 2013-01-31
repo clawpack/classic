@@ -8,11 +8,9 @@
 
 module solution_module
 
+    use precision_module
+
     implicit none
-    
-    ! Array types - Default is double precision as defined by 1.d0
-    integer, parameter :: Q_TYPE = kind(1.d0)
-    integer, parameter :: AUX_TYPE = kind(1.d0)
 
     type solution_type
 
@@ -33,6 +31,10 @@ module solution_module
 
     interface new
         module procedure new_solution
+    end interface
+
+    interface output
+        module procedure output_solution
     end interface
 
 contains
@@ -99,7 +101,7 @@ contains
     end subroutine new_solution
 
 
-    subroutine output_solution(solution,t,frame,output_aux,path)
+    subroutine output_solution(solution,t,frame,q_components,aux_components)
 
         implicit none
 
@@ -107,8 +109,8 @@ contains
         type(solution_type), intent(in out) :: solution
         real(kind=8), intent(in) :: t
         integer, intent(in) :: frame
-        character(len=*), optional, intent(in) :: path
-        logical, intent(in) :: output_aux
+        integer, intent(in) :: q_components(solution%num_eqn)
+        integer, intent(in) :: aux_components(solution%num_aux)
 
         ! Locals
         character(len=128) :: q_file_name, t_file_name, aux_file_name
@@ -133,12 +135,8 @@ contains
 
         write(q_output_format,"('(',i2,'e16.8)')") solution%num_eqn
 
+
         ! Construct paths to output files and open them
-        if (present(path)) then
-            q_file_name = path // construct_file_name(frame,'fort.q')
-        else
-            q_file_name = "./_output/" // construct_file_name(frame,'fort.q')
-        endif
         q_file_name = construct_file_name(frame,'fort.q')
         open(IOUNIT,file=q_file_name,status='unknown',form='formatted')
 
@@ -176,7 +174,7 @@ contains
         close(IOUNIT)
 
         ! Output the aux array if requested
-        if (output_aux) then
+        if (.not.all(aux_components == 0)) then
             stop "Outputting the aux array not supported yet!"
         end if
         

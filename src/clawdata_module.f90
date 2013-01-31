@@ -96,19 +96,24 @@ contains
 
         ! I/O Controls
         read(iounit,*) self%output_style
+        self%output_step_interval = 1
         if (self%output_style == 1) then
             read(iounit,*) self%num_output_times
             read(iounit,*) self%t_final
             read(iounit,*) self%output_t0
+
         else if (self%output_style == 2) then
             read(iounit,*) self%num_output_times
             allocate(self%t_out(self%num_output_times),stat=stat)
             if (stat /= 0) stop "Allocation of t_out failed!"
             read(iounit,*) (self%t_out(i), i=1,self%num_output_times)
+
         else if (self%output_style == 3) then
             read(iounit,*) self%output_step_interval
             read(iounit,*) self%total_steps
             read(iounit,*) self%output_t0
+            self%num_output_times = self%total_steps
+
         else
             stop "Output style > 3 unimplemented."
         end if

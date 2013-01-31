@@ -8,44 +8,53 @@
 
 module solver_module
 
-    use solution_module, only: Q_TYPE
+    use precision_module
 
     implicit none
-    
-    ! Solver type parameters - defaults to 1.d0
-    integer, parameter :: F_TYPE = kind(1.d0)
-    integer, parameter :: ASDQ_TYPE = kind(1.d0)
-    integer, parameter :: WAVE_TYPE = kind(1.d0)
-    integer, parameter :: S_TYPE = kind(1.d0)
-    integer, parameter :: DTDX_TYPE = kind(1.d0)
 
     ! Riemann Solver abstract interface
-    abstract interface   
+!     abstract interface   
 
-        subroutine rp(num_eqn,num_aux,num_ghost,num_cells,num_waves,ql,qr, &
-                       auxl,auxr,wave,s,amdq,apdq)
+!         subroutine rp(num_eqn,num_aux,num_ghost,num_cells,num_waves,ql,qr, &
+!                        auxl,auxr,wave,s,amdq,apdq)
 
-!             use solver_module, only: WAVE_TYPE, S_TYPE, ASDQ_TYPE
-            use solution_module, only: Q_TYPE, AUX_TYPE
+!             use precision_module
+
+!             implicit none
+
+!             ! Input Arguments
+!             integer, intent(in) :: num_eqn, num_aux, num_ghost, num_cells, num_waves
+!             real(kind=Q_TYPE), intent(in) :: ql(num_eqn,1-num_ghost:num_cells+num_ghost)
+!             real(kind=Q_TYPE), intent(in) :: qr(num_eqn,1-num_ghost:num_cells+num_ghost)
+!             real(kind=AUX_TYPE), intent(in) :: auxl(num_aux,1-num_ghost:num_cells+num_ghost)
+!             real(kind=AUX_TYPE), intent(in) :: auxr(num_aux,1-num_ghost:num_cells+num_ghost)
+
+!             ! Output Arguments
+!             real(kind=WAVE_TYPE), intent(in out) :: wave(num_eqn,num_waves,1-num_ghost:num_cells+num_ghost)
+!             real(kind=S_TYPE), intent(in out) :: s(num_waves,1-num_ghost:num_cells+num_ghost)
+!             real(kind=ASDQ_TYPE), intent(in out) :: amdq(num_eqn,1-num_ghost:num_cells+num_ghost)
+!             real(kind=ASDQ_TYPE), intent(in out) :: apdq(num_eqn,1-num_ghost:num_cells+num_ghost)
+
+!         end subroutine rp
+!     end interface
+
+    abstract interface
+        subroutine rp(num_eqn, num_aux, num_waves, q_l, q_r,  &
+                             aux_l, aux_r, wave, s, amdq, apdq)
+
+            use precision_module
 
             implicit none
 
-            integer, parameter :: ASDQ_TYPE = kind(1.d0)
-            integer, parameter :: WAVE_TYPE = kind(1.d0)
-            integer, parameter :: S_TYPE = kind(1.d0)
-
             ! Input Arguments
-            integer, intent(in) :: num_eqn, num_aux, num_ghost, num_cells, num_waves
-            real(kind=Q_TYPE), intent(in) :: ql(num_eqn,1-num_ghost:num_cells+num_ghost)
-            real(kind=Q_TYPE), intent(in) :: qr(num_eqn,1-num_ghost:num_cells+num_ghost)
-            real(kind=AUX_TYPE), intent(in) :: auxl(num_aux,1-num_ghost:num_cells+num_ghost)
-            real(kind=AUX_TYPE), intent(in) :: auxr(num_aux,1-num_ghost:num_cells+num_ghost)
+            integer, intent(in) :: num_eqn, num_aux, num_waves
+            real(kind=Q_TYPE), intent(in) :: q_l(num_eqn), q_r(num_eqn)
+            real(kind=AUX_TYPE), intent(in) :: aux_l(num_aux), aux_r(num_aux)
 
-            ! Output Arguments
-            real(kind=WAVE_TYPE), intent(in out) :: wave(num_eqn,num_waves,1-num_ghost:num_cells+num_ghost)
-            real(kind=S_TYPE), intent(in out) :: s(num_waves,1-num_ghost:num_cells+num_ghost)
-            real(kind=ASDQ_TYPE), intent(in out) :: amdq(num_eqn,1-num_ghost:num_cells+num_ghost)
-            real(kind=ASDQ_TYPE), intent(in out) :: apdq(num_eqn,1-num_ghost:num_cells+num_ghost)
+            ! Output arguments
+            real(kind=WAVE_TYPE), intent(out) :: wave(num_eqn, num_waves)
+            real(kind=S_TYPE), intent(out) :: s(num_waves)
+            real(kind=ASDQ_TYPE), intent(out) :: apdq(num_eqn), amdq(num_eqn)
 
         end subroutine rp
     end interface
