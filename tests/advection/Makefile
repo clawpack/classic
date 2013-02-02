@@ -46,6 +46,7 @@ SOURCES = \
 	$(LIB_PATH)/1d/before_step.f90 \
 	$(LIB_PATH)/1d/source_term.f90 \
 	$(LIB_PATH)/1d/boundary_conditions.f90 \
+	$(LIB_PATH)/1d/limiter.f90 \
 	$(LIB_PATH)/open_data_file.f90
 
 

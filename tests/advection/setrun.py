@@ -55,7 +55,7 @@ def setrun(claw_pkg='Classic'):
     clawdata.upper[0] = 1.0
 
     # Number of grid cells:
-    clawdata.num_cells[0] = 50
+    clawdata.num_cells[0] = 100
     
     
 
@@ -149,7 +149,7 @@ def setrun(claw_pkg='Classic'):
     
     # Initial time step for variable dt.  
     # If dt_variable==0 then dt=dt_initial for all steps:
-    clawdata.dt_initial = 0.8 / 50.0
+    clawdata.dt_initial = 0.8 / float(clawdata.num_cells[0])
     
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1e+99
@@ -170,7 +170,7 @@ def setrun(claw_pkg='Classic'):
     # ------------------
 
     # Order of accuracy:  1 => Godunov,  2 => Lax-Wendroff plus limiters
-    clawdata.order = 1
+    clawdata.order = 2
     
     # Use dimensional splitting?
     clawdata.dimensional_split = 0
@@ -216,8 +216,8 @@ def setrun(claw_pkg='Classic'):
     #   2 => periodic (must specify this at both boundaries)
     #   3 => solid wall for systems where q(2) is normal velocity
     
-    clawdata.bc_lower[0] = 1
-    clawdata.bc_upper[0] = 1
+    clawdata.bc_lower[0] = 2
+    clawdata.bc_upper[0] = 2
     
     return rundata
     # end of function setrun

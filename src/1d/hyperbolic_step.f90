@@ -17,7 +17,18 @@ subroutine hyperbolic_step(solution,solver)
     real(kind=8) :: cfl
 
     ! Take apart solution and solver data types for ease of reference below
-    associate(q => solution%q, aux => solution%aux)
+    associate(q => solution%q, aux => solution%aux, f => solver%f,           &
+              apdq => solver%apdq, amdq => solver%amdq, wave => solver%wave, &
+              s => solver%s, dtdx => solver%dtdx)
+
+        ! Calculate dt/dx ratio, handles non-uniform grids
+        if (solution%capa_index == 0) then
+            ! Uniform grid being used, set dtdx(:) = dt/dx
+            dtdx = solver%dt / solution%dx(1)
+        else
+            ! Use capacity function to compute spatially variable dx
+            dtdx = solver%dt / (solution%dx(1)*aux(:,solution%capa_index))
+        endif
 
         ! Solve Riemann problem at each interface
 !         call solver%rp1(solution%num_eqn,              &
@@ -37,34 +48,25 @@ subroutine hyperbolic_step(solution,solver)
                             solver%num_waves,               &
                             q(:,i-1), q(:,i),               &
                             aux(:,i-1), aux(:,i),           &
-                            solver%wave(:,:,i),             &
-                            solver%s(:,i),                  &
-                            solver%amdq(:,i),               &
-                            solver%apdq(:,i))
+                            wave(:,:,i),                    &
+                            s(:,i),                         &
+                            amdq(:,i),                      &
+                            apdq(:,i))
         end do
-
-        ! Calculate dt/dx ratio, handles non-uniform grids
-        if (solution%capa_index == 0) then
-            ! Uniform grid being used, set dtdx(:) = dt/dx
-            solver%dtdx = solver%dt / solution%dx(1)
-        else
-            ! Use capacity function to compute spatially variable dx
-            solver%dtdx = solver%dt / (solution%dx(1)*aux(:,solution%capa_index))
-        endif
 
         ! Modify q for Godunov update
         !  Note this may not correspond to a conservative flux-differencing for
         !  equations not in conservative form.  It is conservative if 
         !  amdq + apdq = f(q(i)) - f(q(i-1)).
         forall (i=1:solution%num_cells(1)+1, m=1:solution%num_eqn)
-            q(m,i) = q(m,i) - solver%dtdx(i) * solver%apdq(m,i)
-            q(m,i-1) = q(m,i-1) - solver%dtdx(i-1) * solver%apdq(m,i)
+            q(m,i) = q(m,i) - dtdx(i) * apdq(m,i)
+            q(m,i-1) = q(m,i-1) - dtdx(i-1) * amdq(m,i)
         end forall
 
         ! Compute maximum wave speed for CFL condition
         do mw=1,solver%num_waves
-            cfl = maxval(solver%dtdx * solver%s(mw,:))
-            cfl = max(cfl,maxval(-solver%dtdx * solver%s(mw,:)))
+            cfl = maxval(dtdx * s(mw,:))
+            cfl = max(cfl,maxval(-dtdx * s(mw,:)))
         end do
 
         ! Set new CFL from this time step
@@ -72,7 +74,30 @@ subroutine hyperbolic_step(solution,solver)
 
         if (solver%order > 1) then
             ! Compute correction fluxes for second order q_{xx} terms
-            stop "Second order not implemented yet"
+            solver%f = 0.d0
+
+            ! Apply limiters 
+            if (any(solver%limiters /= 0)) then
+                call limiter(solution%num_cells(1), solver%num_ghost,        &
+                             solution%num_eqn, solver%num_waves, wave, s,    &
+                             solver%limiters)
+            end if
+
+            ! Construct flux corrections
+            forall(i=1:solution%num_cells(1)+1, m=1:solution%num_eqn,     &
+                   mw=1:solver%num_waves)
+                
+                f(m,i) = f(m,i) + 0.5d0 * abs(s(mw,i))      &
+                    * (1.d0 - abs(s(mw,i)) * (0.5d0 * (dtdx(i-1) + dtdx(i)))) &
+                    * wave(m,mw,i)
+            end forall
+
+            ! Update q by differencing correction fluxes
+            do m=1,solution%num_eqn
+                q(m,1:solution%num_cells(1)) = q(m,1:solution%num_cells(1))  &
+                                             - dtdx(1:solution%num_cells(1)) &
+            * (f(m,2:solution%num_cells(1)+1) - f(m,1:solution%num_cells(1)))
+            enddo
         endif
 
     end associate

@@ -69,7 +69,7 @@ module solver_module
         ! Solver parameters
         integer :: order, transverse_waves, dimensional_split, source_splitting
         integer :: num_waves, verbosity, steps_max
-        integer, allocatable :: limiter(:)
+        integer, allocatable :: limiters(:)
         real(kind=8) :: dt_max_allowed, cfl_max_allowed, cfl_desired
         logical :: use_fwaves, dt_variable
 
@@ -119,6 +119,12 @@ contains
         self%cfl_desired = clawdata%cfl_desired
         self%cfl_max_allowed = clawdata%cfl_max_allowed
 
+        ! Allocate solver work arrays
+        self%num_waves = clawdata%num_waves
+
+        allocate(self%limiters(self%num_waves))
+        self%limiters = clawdata%limiters
+
         ! Boundary conditions
         self%num_ghost = clawdata%num_ghost
         self%bc_lower = clawdata%bc_lower
@@ -131,9 +137,6 @@ contains
         self%cfl = clawdata%cfl_desired
         self%cfl_max = tiny(1.d0)
         self%dt = clawdata%dt_init
-
-        ! Allocate solver work arrays
-        self%num_waves = clawdata%num_waves
 
         associate(num_eqn => clawdata%num_eqn, &
                   num_cells => clawdata%num_cells(1), &

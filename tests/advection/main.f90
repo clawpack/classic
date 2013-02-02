@@ -13,6 +13,7 @@ program advection1d
     type(clawdata_type) :: clawdata
 
     real(kind=8) :: beta
+    integer :: i
 
     ! Read in advective speed and initial condition data
     call open_data_file(13,'./setprob.data')
@@ -25,7 +26,11 @@ program advection1d
 
     ! Initialize solution
     call new(solution,clawdata)
-    solution%q(1,:) = exp(-beta * (solution%centers - 0.3d0)**2)
+    solution%q(1,:) = exp(-beta * (solution%centers - 0.2d0)**2)
+    forall(i=1:solution%num_cells(1), solution%centers(i) > 0.7d0 .and.   &
+                                      solution%centers(i) < 0.8d0)
+        solution%q(1,i) = 1.d0
+    end forall
 
     ! Initialize solver
     call new(solver,clawdata)
