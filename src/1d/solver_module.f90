@@ -8,6 +8,7 @@
 
 module solver_module
 
+    use iso_c_binding, only: c_ptr, C_NULL_PTR
     use precision_module
 
     implicit none
@@ -24,38 +25,41 @@ module solver_module
 
 !             ! Input Arguments
 !             integer, intent(in) :: num_eqn, num_aux, num_ghost, num_cells, num_waves
-!             real(kind=Q_TYPE), intent(in) :: ql(num_eqn,1-num_ghost:num_cells+num_ghost)
-!             real(kind=Q_TYPE), intent(in) :: qr(num_eqn,1-num_ghost:num_cells+num_ghost)
-!             real(kind=AUX_TYPE), intent(in) :: auxl(num_aux,1-num_ghost:num_cells+num_ghost)
-!             real(kind=AUX_TYPE), intent(in) :: auxr(num_aux,1-num_ghost:num_cells+num_ghost)
+!             real(kind=DP), intent(in) :: ql(num_eqn,1-num_ghost:num_cells+num_ghost)
+!             real(kind=DP), intent(in) :: qr(num_eqn,1-num_ghost:num_cells+num_ghost)
+!             real(kind=DP), intent(in) :: auxl(num_aux,1-num_ghost:num_cells+num_ghost)
+!             real(kind=DP), intent(in) :: auxr(num_aux,1-num_ghost:num_cells+num_ghost)
 
 !             ! Output Arguments
-!             real(kind=WAVE_TYPE), intent(in out) :: wave(num_eqn,num_waves,1-num_ghost:num_cells+num_ghost)
-!             real(kind=S_TYPE), intent(in out) :: s(num_waves,1-num_ghost:num_cells+num_ghost)
-!             real(kind=ASDQ_TYPE), intent(in out) :: amdq(num_eqn,1-num_ghost:num_cells+num_ghost)
-!             real(kind=ASDQ_TYPE), intent(in out) :: apdq(num_eqn,1-num_ghost:num_cells+num_ghost)
+!             real(kind=DP), intent(in out) :: wave(num_eqn,num_waves,1-num_ghost:num_cells+num_ghost)
+!             real(kind=DP), intent(in out) :: s(num_waves,1-num_ghost:num_cells+num_ghost)
+!             real(kind=DP), intent(in out) :: amdq(num_eqn,1-num_ghost:num_cells+num_ghost)
+!             real(kind=DP), intent(in out) :: apdq(num_eqn,1-num_ghost:num_cells+num_ghost)
 
 !         end subroutine rp
 !     end interface
 
     abstract interface
-        subroutine rp(num_eqn, num_aux, num_waves, q_l, q_r,  &
-                             aux_l, aux_r, wave, s, amdq, apdq)
+        subroutine rp(num_eqn, num_aux, num_waves, rp_data, geometry,   &
+                        q_l, q_r, aux_l, aux_r, wave, s, amdq, apdq)
 
-            use precision_module
+            use iso_c_binding, only: c_ptr
+            use precision_module, only: DP
+            use geometry_module, only: geometry_type
 
             implicit none
 
             ! Input Arguments
             integer, intent(in) :: num_eqn, num_aux, num_waves
-            real(kind=Q_TYPE), intent(in) :: q_l(num_eqn), q_r(num_eqn)
-            real(kind=AUX_TYPE), intent(in) :: aux_l(num_aux), aux_r(num_aux)
+            type(geometry_type), intent(in) :: geometry
+            type(c_ptr), intent(in) :: rp_data
+            real(kind=DP), intent(in) :: q_l(num_eqn), q_r(num_eqn)
+            real(kind=DP), intent(in) :: aux_l(num_aux), aux_r(num_aux)
 
             ! Output arguments
-            real(kind=WAVE_TYPE), intent(out) :: wave(num_eqn, num_waves)
-            real(kind=S_TYPE), intent(out) :: s(num_waves)
-            real(kind=ASDQ_TYPE), intent(out) :: apdq(num_eqn), amdq(num_eqn)
-
+            real(kind=DP), intent(out) :: wave(num_eqn, num_waves)
+            real(kind=DP), intent(out) :: s(num_waves)
+            real(kind=DP), intent(out) :: apdq(num_eqn), amdq(num_eqn)
         end subroutine rp
     end interface
 
@@ -77,16 +81,17 @@ module solver_module
         integer :: num_ghost, bc_lower(1), bc_upper(1)
 
         ! Memory storage for this solver
-        real(kind=F_TYPE), pointer :: f(:,:)
-        real(kind=ASDQ_TYPE), pointer :: apdq(:,:), amdq(:,:)
-        real(kind=WAVE_TYPE), pointer :: wave(:,:,:)
-        real(kind=S_TYPE), pointer :: s(:,:)
-        real(kind=DTDX_TYPE), pointer :: dtdx(:)
+        real(kind=DP), pointer :: f(:,:)
+        real(kind=DP), pointer :: apdq(:,:), amdq(:,:)
+        real(kind=DP), pointer :: wave(:,:,:)
+        real(kind=DP), pointer :: s(:,:)
+        real(kind=DP), pointer :: dtdx(:)
 
-        real(kind=Q_TYPE), pointer :: q_old(:,:)
+        real(kind=DP), pointer :: q_old(:,:)
         
-        ! Function pointer to Riemann solver
+        ! Function pointer to Riemann solver and Riemann solver data
         procedure (rp), nopass, pointer :: rp1
+        type(c_ptr) :: rp_data
 
     end type solver_type
 
@@ -161,6 +166,7 @@ contains
 
         ! Set the Riemann solver function pointer to null to avoid confusion
         self%rp1 => null()
+        self%rp_data = C_NULL_PTR
 
     end subroutine new_solver
 

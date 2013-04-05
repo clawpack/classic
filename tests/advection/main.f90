@@ -1,8 +1,10 @@
 program advection1d
 
+    use iso_c_binding, only: c_ptr, c_loc, c_associated
+
     use solver_module
     use solution_module
-    use rp1_advection, only: u, rp1, rp_ptwise
+    use rp1_advection, only: rp_ptwise, rp_type
 
     use clawdata_module
 
@@ -12,12 +14,14 @@ program advection1d
     type(solver_type) :: solver
     type(clawdata_type) :: clawdata
 
+    type(rp_type), target :: rp_aux
+
     real(kind=8) :: beta
     integer :: i
 
     ! Read in advective speed and initial condition data
     call open_data_file(13,'./setprob.data')
-    read(13,*) u
+    read(13,*) rp_aux%u
     read(13,*) beta
     close(13)
 
@@ -35,9 +39,10 @@ program advection1d
     ! Initialize solver
     call new(solver,clawdata)
     solver%rp1 => rp_ptwise
+    solver%rp_data = c_loc(rp_aux)
 
     ! Start output loop
-    call run_simulation(solution,solver,clawdata)
+    call run_simulation(solution, solver, clawdata)
 
 contains
 

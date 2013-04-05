@@ -34,6 +34,7 @@ LIB_PATH = ../../src
 MODULES = \
 	$(LIB_PATH)/precision_module.f90 \
 	$(LIB_PATH)/clawdata_module.f90 \
+	$(LIB_PATH)/1d/geometry_module.f90 \
 	$(LIB_PATH)/1d/solution_module.f90 \
 	$(LIB_PATH)/1d/solver_module.f90 \
 	$(LIB_PATH)/1d/rp1_interface.f90 \

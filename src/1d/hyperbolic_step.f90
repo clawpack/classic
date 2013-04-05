@@ -4,6 +4,8 @@
 subroutine hyperbolic_step(solution,solver)
 
     use solution_module, only: solution_type
+    use precision_module, only: dp
+    use geometry_module, only: geometry_type
     use solver_module, only: solver_type
 
     implicit none
@@ -14,6 +16,7 @@ subroutine hyperbolic_step(solution,solver)
 
     ! Local storage
     integer :: i, m, mw
+    type(geometry_type) :: geometry
     real(kind=8) :: cfl
 
     ! Take apart solution and solver data types for ease of reference below
@@ -43,9 +46,15 @@ subroutine hyperbolic_step(solution,solver)
 !                         solver%amdq,                   &
 !                         solver%apdq)
         do i=2-solver%num_ghost,solution%num_cells(1)+solver%num_ghost
+            geometry%x = solution%lower(1) + (i-0.5_dp) * solution%dx(1)
+            geometry%dx = solution%dx(1)
+            geometry%t = solution%t
+            geometry%dt = solver%dt
             call solver%rp1(solution%num_eqn,               &
                             solution%num_aux,               &
                             solver%num_waves,               &
+                            solver%rp_data,                 &
+                            geometry,                       &
                             q(:,i-1), q(:,i),               &
                             aux(:,i-1), aux(:,i),           &
                             wave(:,:,i),                    &

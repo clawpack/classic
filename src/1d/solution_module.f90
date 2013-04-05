@@ -24,8 +24,8 @@ module solution_module
         integer :: capa_index
 
         ! Solution arrays
-        real(kind=Q_TYPE), pointer :: q(:,:)
-        real(kind=AUX_TYPE), pointer :: aux(:,:)
+        real(kind=DP), pointer :: q(:,:)
+        real(kind=DP), pointer :: aux(:,:)
         
     end type solution_type
 
@@ -40,7 +40,7 @@ module solution_module
 contains
 
 
-    subroutine new_solution(self,clawdata)
+    subroutine new_solution(self, clawdata)
 
         use clawdata_module, only: clawdata_type
 
