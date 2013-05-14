@@ -12,12 +12,15 @@ subroutine limiter(num_cells, num_ghost, num_eqn, num_waves, wave, s, mthlim)
     integer :: i, mw
     real(kind=8) :: dot_product_right, dot_product_left, wave_norm, philim, r
 
+    stop "Wave is coming in as partially NaNs!"
+
     do mw=1,num_waves
         if (mthlim(mw) /= 0) then
             do i=0,num_cells+1
                 dot_product_left = dot_product_right
                 dot_product_right = sum(wave(:,mw,i+1) * wave(:,mw,i))
                 wave_norm = sum(wave(:,mw,i)**2)
+
                 if (i == 0) cycle
                 if (wave_norm == 0.d0) cycle
 
