@@ -4,7 +4,8 @@ program advection1d
 
     use solver_module
     use solution_module
-    use rp1_advection, only: rp_ptwise, rp_type
+    use rp1_advection, only: rp1_advection_ptwise, rp1_advection_vectorized
+    use rp1_advection, only: rp_type
 
     use clawdata_module
 
@@ -38,7 +39,8 @@ program advection1d
 
     ! Initialize solver
     call new(solver,clawdata)
-    solver%rp1 => rp_ptwise
+    solver%rp1_ptwise => rp1_advection_ptwise
+!     solver%rp1_vectorized => rp1_advection_vectorized
     solver%rp_data = c_loc(rp_aux)
 
     ! Start output loop

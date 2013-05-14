@@ -33,35 +33,49 @@ subroutine hyperbolic_step(solution,solver)
             dtdx = solver%dt / (solution%dx(1)*aux(:,solution%capa_index))
         endif
 
-        ! Solve Riemann problem at each interface
-!         call solver%rp1(solution%num_eqn,              &
-!                         solution%num_aux,              &
-!                         solver%num_ghost,              &
-!                         solution%num_cells(1),         &
-!                         solver%num_waves,              &
-!                         q, q,                          &
-!                         aux, aux,                      &
-!                         solver%wave,                   &
-!                         solver%s,                      &
-!                         solver%amdq,                   &
-!                         solver%apdq)
-        do i=2-solver%num_ghost,solution%num_cells(1)+solver%num_ghost
-            geometry%x = solution%lower(1) + (i-0.5_dp) * solution%dx(1)
+        ! Solve Riemann problem at each interface - Note that if both the
+        ! vectorized solver function and the point-wise function pointers are
+        ! set the vectorized form is used
+        if (associated(solver%rp1_vectorized)) then
+            ! Not sure if x should be included due to vector construction overhead
+            geometry%x = 0.0_dp  !solution%lower(1) + (i-0.5_dp) * solution%dx(1)
             geometry%dx = solution%dx(1)
             geometry%t = solution%t
             geometry%dt = solver%dt
-            call solver%rp1(solution%num_eqn,               &
-                            solution%num_aux,               &
-                            solver%num_waves,               &
-                            solver%rp_data,                 &
-                            geometry,                       &
-                            q(:,i-1), q(:,i),               &
-                            aux(:,i-1), aux(:,i),           &
-                            wave(:,:,i),                    &
-                            s(:,i),                         &
-                            amdq(:,i),                      &
-                            apdq(:,i))
-        end do
+            call solver%rp1_vectorized(solution%num_eqn,             &
+                                      solution%num_aux,              &
+                                      solver%num_ghost,              &
+                                      solution%num_cells(1),         &
+                                      solver%num_waves,              &
+                                      solver%rp_data,                &
+                                      geometry,                      &
+                                      q, q,                          &
+                                      aux, aux,                      &
+                                      solver%wave,                   &
+                                      solver%s,                      &
+                                      solver%amdq,                   &
+                                      solver%apdq)
+        else if (associated(solver%rp1_ptwise)) then
+            do i=2-solver%num_ghost,solution%num_cells(1)+solver%num_ghost
+                geometry%x = solution%lower(1) + (i-0.5_dp) * solution%dx(1)
+                geometry%dx = solution%dx(1)
+                geometry%t = solution%t
+                geometry%dt = solver%dt
+                call solver%rp1_ptwise(solution%num_eqn,              &
+                                      solution%num_aux,               &
+                                      solver%num_waves,               &
+                                      solver%rp_data,                 &
+                                      geometry,                       &
+                                      q(:,i-1), q(:,i),               &
+                                      aux(:,i-1), aux(:,i),           &
+                                      wave(:,:,i),                    &
+                                      s(:,i),                         &
+                                      amdq(:,i),                      &
+                                      apdq(:,i))
+            end do
+        else
+            stop "No Riemann solver function specified."
+        endif
 
         ! Modify q for Godunov update
         !  Note this may not correspond to a conservative flux-differencing for
@@ -85,7 +99,7 @@ subroutine hyperbolic_step(solution,solver)
             ! Compute correction fluxes for second order q_{xx} terms
             solver%f = 0.d0
 
-            ! Apply limiters 
+            ! Apply limiters
             if (any(solver%limiters /= 0)) then
                 call limiter(solution%num_cells(1), solver%num_ghost,        &
                              solution%num_eqn, solver%num_waves, wave, s,    &
