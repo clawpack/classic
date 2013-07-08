@@ -80,9 +80,9 @@ contains
         real(kind=DP), intent(in) :: aux_l(num_aux), aux_r(num_aux)
 
         ! Output arguments
-        real(kind=DP), intent(out) :: wave(num_eqn, num_waves)
-        real(kind=DP), intent(out) :: s(num_waves)
-        real(kind=DP), intent(out) :: apdq(num_eqn), amdq(num_eqn)
+        real(kind=DP), intent(in out) :: wave(num_eqn, num_waves)
+        real(kind=DP), intent(in out) :: s(num_waves)
+        real(kind=DP), intent(in out) :: apdq(num_eqn), amdq(num_eqn)
 
         ! Local data
         type(rp_type), pointer :: rp_aux

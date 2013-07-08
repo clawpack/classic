@@ -1,7 +1,7 @@
-subroutine evolve_to_time(t_end, solution, solver, single_step)
+logical function evolve_to_time(t_end, solution, solver, single_step) result success
     
     use solution_module, only: solution_type
-    use solver_module, only: solver_type, choose_new_dt, check_CFL
+    use solver_module, only: solver_type
 
     implicit none
 
@@ -18,6 +18,9 @@ subroutine evolve_to_time(t_end, solution, solver, single_step)
     character(len=*), parameter :: stat_msg = "('CLAW1... Step',i4,"  // &
                          "'   Courant number =',f6.3,'  dt =',d12.4," // &
                          "'  t =',d12.4)" 
+
+    ! Initialize return status
+    success = .false.
 
     ! Initialize status storage
     num_steps = 0
@@ -78,8 +81,19 @@ subroutine evolve_to_time(t_end, solution, solver, single_step)
 
         ! Check CFL condition
         if (.not.check_CFL(solver)) then
-            ! Reject this step
-            stop "Rejected CFL step not supported."
+            ! Reject this step and reset q
+            print *, 'CLAW - Rejecting step... Courant number too large'
+            solution%q = solver%q_old
+
+            if (.not.solver%dt_variable) then
+                ! Not taking variable time steps so exit due to CFL violation
+                solver%cfl_max = max(solver%cfl,solver%cfl_max)
+                success = .false.
+                return
+            endif
+
+            ! Go back to beginning of loop, already should have choosen the 
+            ! correct time step from above
             cycle primary_loop
         else
             ! Accept this step
@@ -95,5 +109,7 @@ subroutine evolve_to_time(t_end, solution, solver, single_step)
         endif
 
     end do primary_loop
+
+    success = .true.
     
-end subroutine evolve_to_time
+end function evolve_to_time
