@@ -7,6 +7,7 @@ program advection1d
     use controller_module
     use rp1_advection, only: rp1_advection_ptwise, rp1_advection_vectorized
     use rp1_advection, only: rp_type
+    use precision_module, only: dp
 
     use clawdata_module
 
@@ -18,7 +19,7 @@ program advection1d
 
     type(rp_type), target :: rp_aux
 
-    real(kind=8) :: beta
+    real(dp) :: beta
     integer :: i
 
     ! Read in advective speed and initial condition data

@@ -9,7 +9,7 @@
 module solver_module
 
     use iso_c_binding, only: c_ptr, C_NULL_PTR
-    use precision_module
+    use precision_module, only: dp
 
     implicit none
 
@@ -72,13 +72,13 @@ module solver_module
         
         ! Status of solver
         integer :: num_steps
-        real(kind=8) :: dt_min, dt_max, cfl, cfl_max, dt
+        real(dp) :: dt_min, dt_max, cfl, cfl_max, dt
 
         ! Solver parameters
         integer :: order, transverse_waves, dimensional_split, source_splitting
         integer :: num_waves, verbosity, steps_max
         integer, allocatable :: limiters(:)
-        real(kind=8) :: dt_max_allowed, cfl_max_allowed, cfl_desired
+        real(dp) :: dt_max_allowed, cfl_max_allowed, cfl_desired
         logical :: use_fwaves, dt_variable
 
         ! Time stepper function controls
@@ -204,14 +204,14 @@ contains
         implicit none
 
         ! Arguments
-        real(kind=8), intent(in) :: t_end
+        real(dp), intent(in) :: t_end
         type(solution_type), intent(in out) :: solution
         type(solver_type), intent(in out) :: solver
         logical, optional, intent(in) :: single_step
 
         ! Locals
         integer :: num_steps
-        real(kind=8) :: t_old, t_new, t_start
+        real(dp) :: t_old, t_new, t_start
 
         character(len=*), parameter :: stat_msg = "('CLAW1... Step',i4,"  // &
                              "'   Courant number =',f6.3,'  dt =',d12.4," // &

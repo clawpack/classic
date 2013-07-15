@@ -1,4 +1,5 @@
 module controller_module
+    use precision_module, only: dp
 
     implicit none
 
@@ -20,7 +21,7 @@ contains
         ! Locals
         integer :: frame, stat
         integer, allocatable :: no_aux_output(:)
-        real(kind=8) :: dt_out, t_start
+        real(dp) :: dt_out, t_start
 
         ! Log file settings
         integer, parameter :: LOG_UNIT = 213
@@ -55,7 +56,7 @@ contains
         ! Setup time output steps
         if (clawdata%output_style == 1) then
                 dt_out = (clawdata%t_final - clawdata%t0) &
-                                    / real(clawdata%num_output_times,kind=8)
+                                    / real(clawdata%num_output_times, dp)
         end if
 
         ! Open log file
