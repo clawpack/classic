@@ -12,6 +12,7 @@ before_script:
   - cat /proc/cpuinfo
   - gfortran -v
   - /usr/bin/f95 -v
+install:
   - cmake -DCMAKE_INSTALL_PREFIX="$VIRTUAL_ENV" -DCMAKE_BUILD_TYPE=${BUILD_TYPE} .
   - make
   - make install
