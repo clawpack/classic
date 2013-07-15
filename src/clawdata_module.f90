@@ -27,7 +27,7 @@ module clawdata_module
         integer :: source_splitting, num_waves, verbosity
         logical :: dt_variable, use_fwaves
         real(kind=8) :: cfl_max_allowed, cfl_desired, dt_max_allowed, dt_init
-        real(kind=8), allocatable :: limiters(:)
+        integer, allocatable :: limiters(:)
 
         ! Boundary conditions
         integer :: num_ghost
