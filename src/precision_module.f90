@@ -1,5 +1,4 @@
 module precision_module
-    THIS WILL FAIL
 
     implicit none
 
