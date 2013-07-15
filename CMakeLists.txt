@@ -19,6 +19,12 @@ if (NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR
     message(FATAL_ERROR "CMAKE_BUILD_TYPE must be one of: Debug, Release (current value: '${CMAKE_BUILD_TYPE}')")
 endif ()
 
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    # Currently the code doesn't compile without warnings, so let's disable the
+    # following warnings. Once the code gets fixed, they can be re-enabled.
+    set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -Wno-unused-variable -Wno-unused-dummy-argument -Wno-unused-parameter")
+endif ()
+
 enable_testing()
 
 add_subdirectory(src)
