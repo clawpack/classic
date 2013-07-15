@@ -28,6 +28,7 @@ endif ()
 enable_testing()
 
 add_subdirectory(src)
+add_subdirectory(tests)
 
 message("\n")
 message("Configuration results")
