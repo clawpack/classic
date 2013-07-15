@@ -4,7 +4,8 @@ program advection1d
 
     use solver_module
     use solution_module
-    use controller_module
+! FIXME: controller_module.f90 is missing!
+!    use controller_module
     use rp1_advection, only: rp1_advection_ptwise, rp1_advection_vectorized
     use rp1_advection, only: rp_type
 
@@ -44,9 +45,10 @@ program advection1d
 !     solver%rp1_vectorized => rp1_advection_vectorized
     solver%rp_data = c_loc(rp_aux)
 
+! FIXME: run_simulation() is not defined anywhere!
     ! Start output loop
-    if (.not.run_simulation(solution, solver, clawdata)) then
-        print *,"uh oh"
-    endif
+!    if (.not.run_simulation(solution, solver, clawdata)) then
+!        print *,"uh oh"
+!    endif
 
 end program advection1d
