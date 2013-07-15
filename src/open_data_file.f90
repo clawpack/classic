@@ -5,7 +5,7 @@
 ! All comment lines must start with # in the first column.
 
 subroutine open_data_file(iounit, fname)
-
+    use utils, only: stop_error
     implicit none
 
     ! Arguments
@@ -29,8 +29,7 @@ subroutine open_data_file(iounit, fname)
         ! #write(6,*) 'truncated fname12 = XXX',fname12,'XXX'
         ! inquire(file=fname12,exist=foundFile)
         if (.not. foundFile) then
-            print "(2a)",'*** in opendatafile, file not found:', fname 
-            stop
+            call stop_error('*** in opendatafile, file not found: ' // fname)
         endif
         ! open(unit=iounit,file=fname12,status='old',form='formatted')
         ! write(6,*) 'Reading data file: ', fname12

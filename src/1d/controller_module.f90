@@ -1,5 +1,6 @@
 module controller_module
     use precision_module, only: dp
+    use utils, only: stop_error, str
 
     implicit none
 
@@ -37,7 +38,7 @@ contains
 
         ! No auxillary output array
         allocate(no_aux_output(solution%num_aux), stat=stat)
-        if (stat /= 0) stop "Not able to allocate work array!"
+        if (stat /= 0) call stop_error("Not able to allocate work array!")
         no_aux_output = 0
 
         ! Output initial time if requested
@@ -62,9 +63,7 @@ contains
         ! Open log file
         open(unit=LOG_UNIT, file=LOG_FILE_NAME, iostat=stat, status="unknown", action="write")
         if ( stat /= 0 ) then
-            print *, "Error opening log file with error ",stat
-            success = .false.
-            stop
+            call stop_error("Error opening log file with error " // str(stat))
         endif
 
         ! Primary output loop
