@@ -88,7 +88,6 @@ subroutine hyperbolic_step(solution,solver)
 
         ! Compute maximum wave speed for CFL condition
         do mw=1,solver%num_waves
-            do i=0,mx+1
             cfl = max(maxval(dtdx * s(mw,:)),maxval(-dtdx * s(mw,:)))
         end do
 
@@ -101,7 +100,6 @@ subroutine hyperbolic_step(solution,solver)
 
             ! Apply limiters
             if (any(solver%limiters /= 0)) then
-                print *,size(wave)
                 call limiter(solution%num_cells(1), solver%num_ghost,        &
                              solution%num_eqn, solver%num_waves, wave, s,    &
                              solver%limiters)

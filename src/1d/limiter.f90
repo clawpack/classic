@@ -12,10 +12,10 @@ subroutine limiter(num_cells, num_ghost, num_eqn, num_waves, wave, s, mthlim)
     integer :: i, mw
     real(kind=8) :: dot_product_right, dot_product_left, wave_norm, philim, r
 
-    print *, wave
-    print *, num_cells, num_ghost, num_eqn, num_waves
-    print *, size(wave)
-    stop "Wave is coming in as partially NaNs!"
+!     print *, wave
+!     print *, num_cells, num_ghost, num_eqn, num_waves
+!     print *, size(wave)
+!     stop "Wave is coming in as partially NaNs!"
 
     do mw=1,num_waves
         if (mthlim(mw) /= 0) then
