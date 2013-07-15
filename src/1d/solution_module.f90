@@ -8,7 +8,7 @@
 
 module solution_module
 
-    use precision_module
+    use precision_module, only: dp
 
     implicit none
 
@@ -17,8 +17,8 @@ module solution_module
         ! Solution extents
         integer :: num_dim, num_eqn, num_aux
         integer, allocatable :: num_cells(:)
-        real(kind=8) :: t
-        real(kind=8), allocatable :: dx(:), lower(:), upper(:), centers(:)
+        real(dp) :: t
+        real(dp), allocatable :: dx(:), lower(:), upper(:), centers(:)
 
         ! Aux array descriptors
         integer :: capa_index
@@ -107,7 +107,7 @@ contains
 
         ! Arguments
         type(solution_type), intent(in out) :: solution
-        real(kind=8), intent(in) :: t
+        real(dp), intent(in) :: t
         integer, intent(in) :: frame
         integer, intent(in) :: q_components(solution%num_eqn)
         integer, intent(in) :: aux_components(solution%num_aux)

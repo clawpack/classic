@@ -17,7 +17,7 @@ subroutine hyperbolic_step(solution,solver)
     ! Local storage
     integer :: i, m, mw
     type(geometry_type) :: geometry
-    real(kind=8) :: cfl
+    real(dp) :: cfl
 
     ! Take apart solution and solver data types for ease of reference below
     associate(q => solution%q, aux => solution%aux, f => solver%f,           &

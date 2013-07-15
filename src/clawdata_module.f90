@@ -1,5 +1,6 @@
 module clawdata_module
 
+    use precision_module, only: dp
     implicit none
     
     ! Representation of the clawpack intput data file
@@ -11,23 +12,23 @@ module clawdata_module
 
         ! Domain specification
         integer :: capa_index
-        real(kind=8) :: t0
-        real(kind=8), allocatable :: lower(:), upper(:)
+        real(dp) :: t0
+        real(dp), allocatable :: lower(:), upper(:)
 
         ! Output
         integer :: output_style, num_output_times, output_step_interval
         integer :: total_steps, output_format
         integer, allocatable :: output_q_components(:), output_aux_components(:)
         logical :: output_t0, output_aux_onlyonce
-        real(kind=8) :: t_final
-        real(kind=8), allocatable :: t_out(:)
+        real(dp) :: t_final
+        real(dp), allocatable :: t_out(:)
 
         ! Solver attributes
         integer :: steps_max, order, transverse_waves, dimensional_split
         integer :: source_splitting, num_waves, verbosity
         logical :: dt_variable, use_fwaves
-        real(kind=8) :: cfl_max_allowed, cfl_desired, dt_max_allowed, dt_init
-        real(kind=8), allocatable :: limiters(:)
+        real(dp) :: cfl_max_allowed, cfl_desired, dt_max_allowed, dt_init
+        real(dp), allocatable :: limiters(:)
 
         ! Boundary conditions
         integer :: num_ghost

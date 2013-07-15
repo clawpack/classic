@@ -1,16 +1,17 @@
 subroutine limiter(num_cells, num_ghost, num_eqn, num_waves, wave, s, mthlim)
+    use precision_module, only: dp
     
     implicit none
 
     ! Input
     integer :: num_cells, num_ghost, num_eqn, num_waves
-    real(kind=8), intent(in out) :: wave(num_eqn, num_waves, 1-num_ghost:num_cells + num_ghost)
-    real(kind=8), intent(in out) :: s(num_waves, 1-num_ghost:num_cells + num_ghost)
+    real(dp), intent(in out) :: wave(num_eqn, num_waves, 1-num_ghost:num_cells + num_ghost)
+    real(dp), intent(in out) :: s(num_waves, 1-num_ghost:num_cells + num_ghost)
     integer, intent(in) :: mthlim(num_waves)
 
     ! Locals
     integer :: i, mw
-    real(kind=8) :: dot_product_right, dot_product_left, wave_norm, philim, r
+    real(dp) :: dot_product_right, dot_product_left, wave_norm, philim, r
 
 !     print *, wave
 !     print *, num_cells, num_ghost, num_eqn, num_waves

@@ -2,18 +2,19 @@ logical function evolve_to_time(t_end, solution, solver, single_step) result(suc
     
     use solution_module, only: solution_type
     use solver_module, only: solver_type, check_CFL
+    use precision_module, only: dp
 
     implicit none
 
     ! Arguments
-    real(kind=8), intent(in) :: t_end
+    real(dp), intent(in) :: t_end
     type(solution_type), intent(in out) :: solution
     type(solver_type), intent(in out) :: solver
     logical, optional, intent(in) :: single_step
 
     ! Locals
     integer :: num_steps
-    real(kind=8) :: t_old, t_new, t_start
+    real(dp) :: t_old, t_new, t_start
 
     character(len=*), parameter :: stat_msg = "('CLAW1... Step',i4,"  // &
                          "'   Courant number =',f6.3,'  dt =',d12.4," // &

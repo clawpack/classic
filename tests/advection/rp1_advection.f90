@@ -1,10 +1,11 @@
 module rp1_advection
 
+    use precision_module, only: dp
     implicit none
     
     type rp_type
         ! Advection speed
-        real(kind=8) :: u
+        real(dp) :: u
     end type rp_type
 
 contains
@@ -15,7 +16,6 @@ contains
 
         use iso_c_binding, only: c_ptr, c_loc, c_f_pointer
         use geometry_module, only: geometry_type
-        use precision_module, only: DP
 
         implicit none
 
