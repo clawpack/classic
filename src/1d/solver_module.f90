@@ -10,6 +10,7 @@ module solver_module
 
     use iso_c_binding, only: c_ptr, C_NULL_PTR
     use precision_module, only: dp
+    use utils, only: stop_error
 
     implicit none
 
@@ -175,17 +176,17 @@ contains
 
         ! Based on number of waves and solution parameters allocate work arrays
         allocate(self%f(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
-        if (stat /= 0) stop "Allocation of f failed."
+        if (stat /= 0) call stop_error("Allocation of f failed.")
         allocate(self%apdq(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
-        if (stat /= 0) stop "Allocation of apdq failed."
+        if (stat /= 0) call stop_error("Allocation of apdq failed.")
         allocate(self%amdq(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
-        if (stat /= 0) stop "Allocation of amdq failed."
+        if (stat /= 0) call stop_error("Allocation of amdq failed.")
         allocate(self%wave(num_eqn,num_waves,1-num_ghost:num_cells+num_ghost),stat=stat)
-        if (stat /= 0) stop "Allocation of wave failed."
+        if (stat /= 0) call stop_error("Allocation of wave failed.")
         allocate(self%s(num_waves,1-num_ghost:num_cells+num_ghost),stat=stat)
-        if (stat /= 0) stop "Allocation of s failed."
+        if (stat /= 0) call stop_error("Allocation of s failed.")
         allocate(self%dtdx(1-num_ghost:num_cells+num_ghost),stat=stat)
-        if (stat /= 0) stop "Allocation of dtdx failed."
+        if (stat /= 0) call stop_error("Allocation of dtdx failed.")
         
         end associate
 

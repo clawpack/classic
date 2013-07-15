@@ -2,6 +2,7 @@ subroutine set_boundary_conditions(solution,solver)
 
     use solution_module, only: solution_type
     use solver_module, only: solver_type
+    use utils, only: stop_error
 
     implicit none
 
@@ -17,7 +18,7 @@ subroutine set_boundary_conditions(solution,solver)
         ! Lower boundary
         select case (solver%bc_lower(1))
             case (0)
-                stop "User defined boundary condintion requested but not implemented."
+                call stop_error("User defined boundary condintion requested but not implemented.")
             case (1)
                 ! Zero-order extrapolation
                 forall (i=1:num_ghost)
@@ -41,7 +42,7 @@ subroutine set_boundary_conditions(solution,solver)
         ! Upper boundary
         select case (solver%bc_upper(1))
             case (0)
-                stop "User defined boundary condintion requested but not implemented."
+                call stop_error("User defined boundary condintion requested but not implemented.")
             case (1)
                 ! Zero-order extrapolation
                 forall (i=1:num_ghost)

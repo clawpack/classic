@@ -34,6 +34,7 @@ contains
 
         use solver_module, only: DP, DP, DP
         use solution_module, only: DP, DP
+        use utils, only: stop_error
 
         implicit none
 
@@ -50,7 +51,7 @@ contains
         real(kind=DP), intent(in out) :: amdq(num_eqn,1-num_ghost:num_cells+num_ghost)
         real(kind=DP), intent(in out) :: apdq(num_eqn,1-num_ghost:num_cells+num_ghost)
 
-        stop "You must provide a valid Riemann solver!"
+        call stop_error("You must provide a valid Riemann solver!")
 
     end subroutine rp1
 
