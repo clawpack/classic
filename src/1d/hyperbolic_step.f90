@@ -88,7 +88,8 @@ subroutine hyperbolic_step(solution,solver)
 
         ! Compute maximum wave speed for CFL condition
         do mw=1,solver%num_waves
-            do i=0,mx+1
+! FIXME: what is the following line supposed to do?
+!            do i=0,mx+1
             cfl = max(maxval(dtdx * s(mw,:)),maxval(-dtdx * s(mw,:)))
         end do
 
