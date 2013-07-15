@@ -1,5 +1,5 @@
 set(SRC
-    clawdata_module.f90  open_data_file.f90  precision_module.f90
+    clawdata_module.f90  utils.f90  precision_module.f90
 
     1d/before_step.f90          1d/hyperbolic_step.f90  1d/set_aux.f90
     1d/boundary_conditions.f90  1d/limiter.f90          1d/solution_module.f90

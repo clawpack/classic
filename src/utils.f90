@@ -1,12 +1,17 @@
+module utils
+implicit none
+private
+public open_data_file
+
+contains
+
+subroutine open_data_file(iounit, fname)
 ! Open the file fname and determine how many leading lines are
 ! comments.  Then rewind and skip over the comment lines so that the
 ! file is ready for reading data from.
 !
 ! All comment lines must start with # in the first column.
 
-subroutine open_data_file(iounit, fname)
-
-    implicit none
 
     ! Arguments
     integer, intent(in) :: iounit
@@ -70,3 +75,5 @@ subroutine open_data_file(iounit, fname)
     !   
 
 end subroutine open_data_file
+
+end module
