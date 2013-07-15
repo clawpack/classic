@@ -1,4 +1,5 @@
 module clawdata_module
+    use utils, only: open_data_file
 
     implicit none
     
