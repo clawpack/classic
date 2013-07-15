@@ -7,15 +7,25 @@ env:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq gfortran liblapack-dev
+  # Print NumPy version that is already installed by Travis CI:
+  - python -c "import numpy; print numpy.__version__"
+  - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
+  - cd clawpack
+  - git submodule init
+  - git submodule update clawutil visclaw riemann
+  - python setup.py install
+  - cd ..
 before_script:
   # Print CPU info for debugging purposes:
   - cat /proc/cpuinfo
   - gfortran -v
   - /usr/bin/f95 -v
+install:
   - cmake -DCMAKE_INSTALL_PREFIX="$VIRTUAL_ENV" -DCMAKE_BUILD_TYPE=${BUILD_TYPE} .
   - make
   - make install
 script:
+  - cd tests/advection; python setrun.py
   - ctest --output-on-failure
 notifications:
   email: false
