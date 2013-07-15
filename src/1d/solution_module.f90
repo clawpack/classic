@@ -9,6 +9,7 @@
 module solution_module
 
     use precision_module, only: dp
+    use utils, only: stop_error
 
     implicit none
 
@@ -55,7 +56,7 @@ contains
         ! Set new solution object's array extents
         self%num_dim = clawdata%num_dim
         allocate(self%num_cells(self%num_dim), stat=stat)
-        if (stat /= 0) stop "Allocation request denied for num_cells"
+        if (stat /= 0) call stop_error("Allocation request denied for num_cells")
         self%num_cells = clawdata%num_cells
         self%num_eqn = clawdata%num_eqn
         self%num_aux = clawdata%num_aux
@@ -82,16 +83,16 @@ contains
 
             ! Allocate primary arrays
             allocate(self%q(num_eqn,1-num_ghost:num_cells+num_ghost),stat=stat)
-            if (stat /= 0) stop "Allocation of solutions's q array failed!"
+            if (stat /= 0) call stop_error("Allocation of solutions's q array failed!")
             allocate(self%aux(num_aux,1-num_ghost:num_cells+num_ghost),stat=stat)
-            if (stat /= 0) stop "Allocation of solutions's aux array failed!"
+            if (stat /= 0) call stop_error("Allocation of solutions's aux array failed!")
 
             ! Calculated values
             allocate(self%dx(self%num_dim), stat=stat)
-            if (stat /= 0) stop "Allocation of solution's dx array failed!"
+            if (stat /= 0) call stop_error("Allocation of solution's dx array failed!")
             self%dx(1) = (self%upper(1) - self%lower(1)) / num_cells
             allocate(self%centers(1-num_ghost:num_cells+num_ghost),stat=stat)
-            if (stat /= 0) stop "Allocation of solutions's centers array failed!"
+            if (stat /= 0) call stop_error("Allocation of solutions's centers array failed!")
             forall(i=1-num_ghost:num_cells+num_ghost)
                 self%centers(i) = self%lower(1) + (i-0.5d0) * self%dx(1)
             end forall
@@ -175,7 +176,7 @@ contains
 
         ! Output the aux array if requested
         if (.not.all(aux_components == 0)) then
-            stop "Outputting the aux array not supported yet!"
+            call stop_error("Outputting the aux array not supported yet!")
         end if
         
     end subroutine output_solution

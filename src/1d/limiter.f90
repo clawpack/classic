@@ -1,5 +1,6 @@
 subroutine limiter(num_cells, num_ghost, num_eqn, num_waves, wave, s, mthlim)
     use precision_module, only: dp
+    use utils, only: stop_error
     
     implicit none
 
@@ -16,7 +17,7 @@ subroutine limiter(num_cells, num_ghost, num_eqn, num_waves, wave, s, mthlim)
 !     print *, wave
 !     print *, num_cells, num_ghost, num_eqn, num_waves
 !     print *, size(wave)
-!     stop "Wave is coming in as partially NaNs!"
+!     call stop_error("Wave is coming in as partially NaNs!")
 
     do mw=1,num_waves
         if (mthlim(mw) /= 0) then
@@ -56,7 +57,7 @@ subroutine limiter(num_cells, num_ghost, num_eqn, num_waves, wave, s, mthlim)
                         philim = r
 
                     case default
-                        stop "*** ERROR *** Invalid limiter requested."
+                        call stop_error("*** ERROR *** Invalid limiter requested.")
                 end select
 
                 wave(:,mw,i) = philim * wave(:,mw,i)

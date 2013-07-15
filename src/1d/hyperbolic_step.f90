@@ -7,6 +7,7 @@ subroutine hyperbolic_step(solution,solver)
     use precision_module, only: dp
     use geometry_module, only: geometry_type
     use solver_module, only: solver_type
+    use utils, only: stop_error
 
     implicit none
 
@@ -74,7 +75,7 @@ subroutine hyperbolic_step(solution,solver)
                                       apdq(:,i))
             end do
         else
-            stop "No Riemann solver function specified."
+            call stop_error("No Riemann solver function specified.")
         endif
 
         ! Modify q for Godunov update

@@ -1,6 +1,7 @@
 module clawdata_module
 
     use precision_module, only: dp
+    use utils, only: stop_error
     implicit none
     
     ! Representation of the clawpack intput data file
@@ -70,20 +71,20 @@ contains
         ! Begin reading file
         read(iounit,'(i2)') self%num_dim
         if (self%num_dim /= 1) then
-            stop "Dimension is not 1, wrong data source files used."
+            call stop_error("Dimension is not 1, wrong data source files used.")
         end if
         
         ! Domain
         allocate(self%lower(self%num_dim), stat=err)
-        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
+        if (err /= 0) call stop_error("*** ERROR *** - Allocation request denied.")
         read(iounit,*) self%lower
         allocate(self%upper(self%num_dim), stat=err)
-        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
+        if (err /= 0) call stop_error("*** ERROR *** - Allocation request denied.")
         read(iounit,*) self%upper
         allocate(self%num_cells(self%num_dim), stat=err)
-        if (err /= 0) stop "*** ERROR *** - Allocation request denied."
+        if (err /= 0) call stop_error("*** ERROR *** - Allocation request denied.")
         read(iounit,*) self%num_cells
-        if (.not. all(self%num_cells > 0, dim=1)) stop "Need number of cells > 0."
+        if (.not. all(self%num_cells > 0, dim=1)) call stop_error("Need number of cells > 0.")
         read(iounit,*)
 
         ! Base array sizes
@@ -106,7 +107,7 @@ contains
         else if (self%output_style == 2) then
             read(iounit,*) self%num_output_times
             allocate(self%t_out(self%num_output_times),stat=stat)
-            if (stat /= 0) stop "Allocation of t_out failed!"
+            if (stat /= 0) call stop_error("Allocation of t_out failed!")
             read(iounit,*) (self%t_out(i), i=1,self%num_output_times)
 
         else if (self%output_style == 3) then
@@ -116,16 +117,16 @@ contains
             self%num_output_times = self%total_steps
 
         else
-            stop "Output style > 3 unimplemented."
+            call stop_error("Output style > 3 unimplemented.")
         end if
         read(iounit,*)
 
         ! Output details
         read(iounit,*) self%output_format
         allocate(self%output_q_components(self%num_eqn), stat=stat)
-        if (stat /= 0) stop "Allocation of output_q_components failed!" 
+        if (stat /= 0) call stop_error("Allocation of output_q_components failed!" )
         allocate(self%output_aux_components(self%num_aux), stat=stat)
-        if (stat /= 0) stop "Allocation of output_aux_components failed!" 
+        if (stat /= 0) call stop_error("Allocation of output_aux_components failed!" )
         read(iounit,*) self%output_q_components
         if (self%num_aux > 0) then
             read(iounit,*) self%output_aux_components
@@ -156,17 +157,17 @@ contains
 
         ! Limiters to be used
         allocate(self%limiters(self%num_waves),stat=stat)
-        if (stat /= 0) stop "Allocation of limiters array failed!"
+        if (stat /= 0) call stop_error("Allocation of limiters array failed!")
         read(iounit,*) (self%limiters(mw), mw=1,self%num_waves)
         read(iounit,*)
 
         ! Boundary conditions
         read(iounit,*) self%num_ghost
         allocate(self%bc_lower(self%num_dim), stat=stat)
-        if (stat /= 0) stop "Allocation of bc_lower failed!"
+        if (stat /= 0) call stop_error("Allocation of bc_lower failed!")
         read(iounit,*) self%bc_lower
         allocate(self%bc_upper(self%num_dim), stat=stat)
-        if (stat /= 0) stop "Allocation of bc_upper failed!"
+        if (stat /= 0) call stop_error("Allocation of bc_upper failed!")
         read(iounit,*) self%bc_upper
         if ((self%bc_lower(1) == 2 .and. self%bc_upper(1) /= 2) .or.  &
             (self%bc_lower(1) /= 2 .and. self%bc_upper(1) == 2)) then
