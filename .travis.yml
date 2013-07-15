@@ -16,6 +16,7 @@ before_script:
   - make
   - make install
 script:
+  - cd tests/advection; python setrun.py
   - ctest --output-on-failure
 notifications:
   email: false
