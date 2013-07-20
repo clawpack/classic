@@ -2,10 +2,22 @@ module utils
 use precision_module, only: dp
 implicit none
 private
-public stop_error, str
+public stop_error, str, open_data_file
 
 interface str
     module procedure str_int, str_real, str_real_n
+end interface
+
+! This subroutine is defined in open_data_file.f90 as a global subroutine, so
+! we interface is here is that user code can import it from here:
+interface
+
+    subroutine open_data_file(iounit, fname)
+        implicit none
+        integer, intent(in) :: iounit
+        character(len=*), intent(in) :: fname
+    end subroutine
+
 end interface
 
 contains
