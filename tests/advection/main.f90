@@ -10,6 +10,7 @@ program advection1d
     use precision_module, only: dp
 
     use clawdata_module
+    use utils, only: open_data_file
 
     implicit none
     
