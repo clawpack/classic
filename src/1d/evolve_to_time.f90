@@ -1,7 +1,8 @@
 logical function evolve_to_time(t_end, solution, solver, single_step) result(success)
     
     use solution_module, only: solution_type
-    use solver_module, only: solver_type, check_CFL
+    use solver_module, only: solver_type, check_CFL, set_boundary_conditions, &
+            before_step, source_term, hyperbolic_step, choose_new_dt
     use precision_module, only: dp
 
     implicit none
