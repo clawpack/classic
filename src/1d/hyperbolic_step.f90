@@ -6,7 +6,7 @@ subroutine hyperbolic_step(solution,solver)
     use solution_module, only: solution_type
     use precision_module, only: dp
     use geometry_module, only: geometry_type
-    use solver_module, only: solver_type
+    use solver_module, only: solver_type, limiter
     use utils, only: stop_error
 
     implicit none
