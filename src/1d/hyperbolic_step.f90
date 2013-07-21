@@ -21,7 +21,7 @@ subroutine hyperbolic_step(solution,solver)
     real(dp) :: cfl
 
     ! Take apart solution and solver data types for ease of reference below
-    associate(q => solution%q, aux => solution%aux, f => solver%f,           &
+    associate(aux => solution%aux, f => solver%f,           &
               apdq => solver%apdq, amdq => solver%amdq, wave => solver%wave, &
               s => solver%s, dtdx => solver%dtdx)
 
@@ -50,7 +50,7 @@ subroutine hyperbolic_step(solution,solver)
                                       solver%num_waves,              &
                                       solver%rp_data,                &
                                       geometry,                      &
-                                      q, q,                          &
+                                      solution%q, solution%q,                          &
                                       aux, aux,                      &
                                       solver%wave,                   &
                                       solver%s,                      &
@@ -67,7 +67,7 @@ subroutine hyperbolic_step(solution,solver)
                                       solver%num_waves,               &
                                       solver%rp_data,                 &
                                       geometry,                       &
-                                      q(:,i-1), q(:,i),               &
+                                      solution%q(:,i-1), solution%q(:,i),               &
                                       aux(:,i-1), aux(:,i),           &
                                       wave(:,:,i),                    &
                                       s(:,i),                         &
@@ -83,8 +83,8 @@ subroutine hyperbolic_step(solution,solver)
         !  equations not in conservative form.  It is conservative if 
         !  amdq + apdq = f(q(i)) - f(q(i-1)).
         forall (i=1:solution%num_cells(1)+1, m=1:solution%num_eqn)
-            q(m,i) = q(m,i) - dtdx(i) * apdq(m,i)
-            q(m,i-1) = q(m,i-1) - dtdx(i-1) * amdq(m,i)
+            solution%q(m,i) = solution%q(m,i) - dtdx(i) * apdq(m,i)
+            solution%q(m,i-1) = solution%q(m,i-1) - dtdx(i-1) * amdq(m,i)
         end forall
 
         ! Compute maximum wave speed for CFL condition
@@ -117,7 +117,7 @@ subroutine hyperbolic_step(solution,solver)
 
             ! Update q by differencing correction fluxes
             do m=1,solution%num_eqn
-                q(m,1:solution%num_cells(1)) = q(m,1:solution%num_cells(1))  &
+                solution%q(m,1:solution%num_cells(1)) = solution%q(m,1:solution%num_cells(1))  &
                                              - dtdx(1:solution%num_cells(1)) &
             * (f(m,2:solution%num_cells(1)+1) - f(m,1:solution%num_cells(1)))
             enddo
