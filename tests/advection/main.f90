@@ -42,8 +42,8 @@ program advection1d
 
     ! Initialize solver
     call new(solver,clawdata)
-    solver%rp1_ptwise => rp1_advection_ptwise
-!     solver%rp1_vectorized => rp1_advection_vectorized
+!    solver%rp1_ptwise => rp1_advection_ptwise
+    solver%rp1_vectorized => rp1_advection_vectorized
     solver%rp_data = c_loc(rp_aux)
 
     ! Start output loop
