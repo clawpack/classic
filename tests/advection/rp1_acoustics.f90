@@ -1,4 +1,4 @@
-module rp1_advection
+module rp1_acoustics
 
     use precision_module, only: dp
     implicit none
@@ -36,22 +36,25 @@ contains
 !     # From the basic clawpack routines, this routine is called with ql = qr
 
 
-    implicit double precision (a-h,o-z)
-
     dimension wave(meqn, mwaves, 1-mbc:maxm+mbc)
     dimension    s(mwaves,1-mbc:maxm+mbc)
     dimension   ql(meqn, 1-mbc:maxm+mbc)
     dimension   qr(meqn, 1-mbc:maxm+mbc)
     dimension apdq(meqn, 1-mbc:maxm+mbc)
     dimension amdq(meqn, 1-mbc:maxm+mbc)
+    integer :: maxm, meqn, mwaves, mbc, mx, num_aux
+    real(dp) :: ql, qr, auxl, auxr, wave, s, amdq, apdq
 
 !     local arrays
 !     ------------
     dimension delta(2)
+    real(dp) :: a1, a2
 
 !     # density, bulk modulus, and sound speed, and impedence of medium:
 !     # (should be set in setprob.f)
     common /cparam/ rho,bulk,cc,zz
+    real(dp) :: bulk, cc, delta, rho, zz
+    integer :: i, m
 
 
 !     # split the jump in q at each interface into waves
