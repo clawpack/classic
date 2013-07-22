@@ -6,7 +6,7 @@ subroutine hyperbolic_step(solution,solver)
     use solution_module, only: solution_type
     use precision_module, only: dp
     use geometry_module, only: geometry_type
-    use solver_module, only: solver_type
+    use solver_module, only: solver_type, limiter
     use utils, only: stop_error
 
     implicit none
@@ -107,13 +107,15 @@ subroutine hyperbolic_step(solution,solver)
             end if
 
             ! Construct flux corrections
-            forall(i=1:solution%num_cells(1)+1, m=1:solution%num_eqn,     &
-                   mw=1:solver%num_waves)
-                
+            do i = 1, solution%num_cells(1)+1
+            do m = 1, solution%num_eqn
+            do mw = 1, solver%num_waves
                 f(m,i) = f(m,i) + 0.5d0 * abs(s(mw,i))      &
                     * (1.d0 - abs(s(mw,i)) * (0.5d0 * (dtdx(i-1) + dtdx(i)))) &
                     * wave(m,mw,i)
-            end forall
+            end do
+            end do
+            end do
 
             ! Update q by differencing correction fluxes
             do m=1,solution%num_eqn

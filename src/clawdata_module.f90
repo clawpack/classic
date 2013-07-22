@@ -1,7 +1,7 @@
 module clawdata_module
 
     use precision_module, only: dp
-    use utils, only: stop_error
+    use utils, only: stop_error, open_data_file
     implicit none
     
     ! Representation of the clawpack intput data file

@@ -124,6 +124,56 @@ module solver_module
         module procedure new_solver
     end interface
 
+! These subroutines are defined as global subroutines in the files with the
+! same name as the subroutine. We define it here so that user code can import
+! it.
+    interface
+
+        subroutine set_boundary_conditions(solution,solver)
+            use solution_module, only: solution_type
+            import :: solver_type
+            implicit none
+            type(solution_type), intent(in out) :: solution
+            type(solver_type), intent(in out) :: solver
+        end subroutine
+
+        subroutine before_step(solution,solver)
+            use solution_module, only: solution_type
+            import :: solver_type
+            implicit none
+            type(solution_type), intent(in out) :: solution
+            type(solver_type), intent(in out) :: solver
+        end subroutine before_step
+
+        subroutine source_term(t, dt, solution, solver)
+            use solution_module, only: solution_type
+            use precision_module, only: dp
+            import :: solver_type
+            implicit none
+            real(dp), intent(in) :: t, dt
+            type(solution_type), intent(in out) :: solution
+            type(solver_type), intent(in out) :: solver
+        end subroutine source_term
+
+        subroutine hyperbolic_step(solution,solver)
+            use solution_module, only: solution_type
+            import :: solver_type
+            implicit none
+            type(solution_type), intent(in out) :: solution
+            type(solver_type), intent(in out) :: solver
+        end subroutine
+
+        subroutine limiter(num_cells, num_ghost, num_eqn, num_waves, wave, s, mthlim)
+            use precision_module, only: dp
+            implicit none
+            integer :: num_cells, num_ghost, num_eqn, num_waves
+            real(dp), intent(in out) :: wave(num_eqn, num_waves, 1-num_ghost:num_cells + num_ghost)
+            real(dp), intent(in out) :: s(num_waves, 1-num_ghost:num_cells + num_ghost)
+            integer, intent(in) :: mthlim(num_waves)
+        end subroutine
+
+    end interface
+
 contains
 
     subroutine new_solver(self, clawdata)
