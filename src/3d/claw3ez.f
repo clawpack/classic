@@ -2,8 +2,8 @@ c
 c
 c
 c     =================================================================
-      subroutine claw3ez(mx_in,my_in,mz_in,meqn,mwaves,mbc,maux,mwork,
-     &                   mthlim,q,work,aux)
+      subroutine claw3ez(mx_in,my_in,mz_in,meqn,mbc,maux,mwork,
+     &                   q,work,aux)
 c     =================================================================
 c
 c     An easy-to-use clawpack driver routine for simple applications
@@ -22,7 +22,6 @@ c
       dimension  aux(maux, 1-mbc:mx_in+mbc, 1-mbc:my_in+mbc,
      &               1-mbc:mz_in+mbc)
       dimension work(mwork)
-      dimension mthlim(mwaves)
 c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(6)
       dimension tout(100)
@@ -30,6 +29,8 @@ c
 c
       common /restrt_block/ tinitial, iframe
 c
+      integer, dimension(:), allocatable :: mthlim
+
       open(55,file='claw3ez.data',status='old',form='formatted')
       open(10,file='fort.info',status='unknown',form='formatted')
 c
@@ -75,8 +76,9 @@ c     # input parameters for clawpack routines
       read(55,*) method(7)
 
       read(55,*) meqn1
-      read(55,*) mwaves1
-      read(55,*) (mthlim(mw), mw=1,mwaves1)
+      read(55,*) mwaves
+      allocate(mthlim(mwaves))
+      read(55,*) (mthlim(mw), mw=1,mwaves)
 
       read(55,*) t0
       read(55,*) xlower
@@ -132,10 +134,6 @@ c
          endif
       if (meqn1 .ne. meqn) then
          write(6,*) '*** ERROR ***  meqn set wrong in input or driver'
-         stop
-         endif
-      if (mwaves1 .ne. mwaves) then
-         write(6,*) '*** ERROR ***  mwaves set wrong in input or driver'
          stop
          endif
       if (mbc1 .ne. mbc) then
@@ -216,7 +214,7 @@ c     # set aux array:
 c
       if (maux .gt. 0)  then
          call setaux(mbc,mx,my,mz,xlower,ylower,
-     &               zlower,dx,dy,dz,maux,aux)
+     &               zlower,dx,dy,dz,maux,aux,t0)
          endif
 c
 c     # set initial conditions:
@@ -302,6 +300,7 @@ c
 c
   999 continue
 c
+      deallocate(mthlim)
       return
       end
 

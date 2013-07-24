@@ -1,26 +1,19 @@
-!  Generic driver routine for claw3 poroelasticity code
+!  Generic driver routine for 3D Clawpack 5.0, using claw3ez
 !  Uses dynamic allocation
 !
 !  Author: Grady Lemoine, based on version of Donna Calhoun
-!  Date : 3/30/2013, based on Calhoun code of 3/22/2002
+!  Date: 7/24/2013, based on Lemoine poroelasticity code of 3/30/2013,
+!                   based on Calhoun code of 3/22/2002
 program driver
     implicit none
 
-    ! These will always be the same for this poroelasticity code.
-    ! narray should be 2 for Strang splitting.  Not specifying meqn
-    ! here to leave things flexible for high-frequency extension at
-    ! some point.
-    integer, parameter :: mbc = 2, mwaves = 8, maux = 20, narray = 2
-
-    integer :: mx, my, mz, meqn, mwork, maxm
+    integer :: mx, my, mz, meqn, mwork, maxm, maux, narray, mwaves, mbc
     double precision, dimension(:,:,:,:), allocatable :: q, aux
     double precision, dimension(:), allocatable :: work
-    double precision, dimension(mwaves) :: mthlim
 
     ! Working variables needed for reading claw.data
-    integer :: tmp, outstyle, i, nout
+    integer :: tmp, outstyle, i, nout, splitstyle
     double precision :: dtmp
-    double precision, dimension(:), allocatable :: tout
 
     ! Get problem dimensions, so we can size workspace
     open(55,file='claw3ez.data',status='old',form='formatted')
@@ -34,9 +27,7 @@ program driver
     if (outstyle == 1) then
         read (55,*) dtmp
     else if (outstyle == 2) then
-        allocate (tout(nout))
-        read (55,*) (tout(i), i = 1,nout)
-        deallocate (tout)
+        read (55,*) (dtmp, i = 1,nout)
     else if (outstyle == 3) then
         read (55,*) tmp, tmp
     end if
@@ -45,11 +36,25 @@ program driver
     read (55,*) dtmp    ! cflv(1)
     read (55,*) dtmp    ! cflv(2)
     read (55,*) tmp     ! nv(1)
-    do i = 1,7
-        read (55,*) tmp    ! method(1:7)
+    do i = 1,4
+        read (55,*) tmp    ! method(1:4)
     end do
+    read (55,*) splitstyle ! method(5) == splitting method
+    if (splitstyle < 2) then
+        narray = 1
+    else
+        narray = 2
+    end if
+    read (55,*) tmp        ! method(6)
+    read (55,*) maux       ! method(7) == maux
     read (55,*) meqn
-    ! Have meqn, done with file
+    read (55,*) mwaves
+    read (55,*) (tmp, i = 1,mwaves)    ! Limiter type for each wave
+    do i = 1,7
+        read (55,*) dtmp    ! t0, lower and upper bounds on computational domain
+    end do
+    read (55,*) mbc    ! Number of ghost cells
+    ! Have all data needed to allocate arrays, done with file
     close(55)
 
     allocate(  q(1-mbc:mx+mbc, 1-mbc:my+mbc, 1-mbc:mz+mbc, meqn))
@@ -61,10 +66,11 @@ program driver
           + narray*(mx + 2*mbc)*(my + 2*mbc)*(mz + 2*mbc)*meqn
     allocate(work(mwork))
 
-    call claw3ez(mx,my,mz,meqn,mwaves,mbc,maux,mwork,mthlim,q,work,aux)
+    call claw3ez(mx,my,mz,meqn,mbc,maux,mwork,q,work,aux)
 
     deallocate(q)
     deallocate(aux)
+    deallocate(work)
 
     stop
 end program driver
