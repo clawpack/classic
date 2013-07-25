@@ -6,3 +6,4 @@ xclaw
 .output
 _output/*
 _output
+*.data
