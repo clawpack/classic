@@ -31,13 +31,15 @@ c
 c
       integer, dimension(:), allocatable :: mthlim
 
-      open(55,file='claw3ez.data',status='old',form='formatted')
+      !open(55,file='claw3ez.data',status='old',form='formatted')
+      call opendatafile(55, 'claw.data')
       open(10,file='fort.info',status='unknown',form='formatted')
 c
 c
 c     # Read the input in standard form from claw2ez.data:
 
 c     domain variables
+      read(55,*) ndim    ! Not actually used, but the modern Python setup writes it
       read(55,*) mx
       read(55,*) my
       read(55,*) mz
@@ -101,7 +103,9 @@ c     # check to see if we are restarting:
 c     # The next two lines may not exist in old versions of claw3ez.data.
 c     # Jump over the second read statement if the 1st finds an EOF:
       read(55,*,end=199,err=199) rest
-      read(55,*) iframe   !# restart from data in fort.qN file, N=iframe
+      if (rest) then
+         read(55,*) iframe      !# restart from data in fort.qN file, N=iframe
+      end if
  199  continue
 
 

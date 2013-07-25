@@ -16,9 +16,11 @@ program driver
     double precision :: dtmp
 
     ! Get problem dimensions, so we can size workspace
-    open(55,file='claw3ez.data',status='old',form='formatted')
+    call opendatafile(55, 'claw.data')
+    !open(55,file='claw.data',status='old',form='formatted')
 
     ! Need to read a fair way into the file to get meqn
+    read (55,*) tmp
     read (55,*) mx
     read (55,*) my
     read (55,*) mz

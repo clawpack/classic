@@ -1,1 +1,8 @@
 *.o
+xclaw
+*.mod
+*~
+.data
+.output
+_output/*
+_output

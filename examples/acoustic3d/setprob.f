@@ -4,7 +4,8 @@
 c
 c     # Set the material parameters for the acoustic equations
 c
-      open(unit=7,file='setprob.data',status='old',form='formatted')
+      !open(unit=7,file='setprob.data',status='old',form='formatted')
+      call opendatafile(7, 'setprob.data')
 c
 c     # Piecewise constant medium with single interface as specified
 c     # in setaux.f
