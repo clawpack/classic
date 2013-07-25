@@ -1,10 +1,10 @@
 # setrun file for 3D variable coefficient acoustics example
 
 def setrun(claw_pkg='classic'):
-    from clawpack.clawutil import data
+    from clawpack.clawutil import clawdata
 
     # General data object
-    rundata = data.ClawRunData(claw_pkg, 3)    # 3 = number of dimensions
+    rundata = clawdata.ClawRunData(claw_pkg, 3)    # 3 = number of dimensions
 
     # Problem-specific data
     probdata = rundata.new_UserData(name='probdata', fname='setprob.data')
@@ -19,52 +19,42 @@ def setrun(claw_pkg='classic'):
     clawdata = rundata.clawdata    # Initialized when rundata is created
 
     # Size of computational domain
-    clawdata.xlower = -1.
-    clawdata.xupper =  1.
-    clawdata.ylower = -1.
-    clawdata.yupper =  1.
-    clawdata.zlower = -1.
-    clawdata.zupper =  1.
+    clawdata.lower = [-1., -1., -1.]
+    clawdata.upper = [ 1.,  1.,  1.]
 
     # Dimensions of grid
-    clawdata.mx = 20
-    clawdata.my = 20
-    clawdata.mz = 20
+    clawdata.num_cells = [20, 20, 20]
 
     # Size of system
-    clawdata.meqn = 4
-    clawdata.maux = 2
-    clawdata.mcapa = 0    # No capacity function
+    clawdata.num_eqn = 4
+    clawdata.num_aux = 2
+    clawdata.capa_index = 0    # No capacity function
 
     # Output control
-    clawdata.outstyle = 1
-    clawdata.nout = 6
+    clawdata.output_style = 1
+    clawdata.num_output_times = 6
     clawdata.tfinal = 1.2
 
     # Time stepping
     clawdata.dt_initial = 0.01
     clawdata.cfl_desired = 0.9
     clawdata.cfl_max = 1.
-    clawdata.max_steps = 500
+    clawdata.steps_max = 500
     clawdata.dt_variable = 1
 
     # Details of the numerical method
     clawdata.order = 2
-    clawdata.order_trans = 22
+    clawdata.transverse_waves = 22
     clawdata.verbosity = 1
-    clawdata.src_split = 0
+    clawdata.source_split = 0
 
     # Waves and limiting
-    clawdata.mwaves = 2
-    clawdata.mthlim = [3]*clawdata.mwaves
+    clawdata.num_waves = 2
+    clawdata.limiter = [3]*clawdata.num_waves
 
     # Boundary conditions
-    clawdata.mthbc_xlower = 1    # Zero-order extrapolation
-    clawdata.mthbc_xupper = 1
-    clawdata.mthbc_ylower = 1
-    clawdata.mthbc_yupper = 1
-    clawdata.mthbc_zlower = 1
-    clawdata.mthbc_zupper = 0    # Custom BC defined in this problem's bc3 routine
+    clawdata.bc_lower = [1, 1, 1]
+    clawdata.bc_upper = [1, 1, 0]
 
     return rundata
 

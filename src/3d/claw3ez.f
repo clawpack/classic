@@ -31,83 +31,153 @@ c
 c
       integer, dimension(:), allocatable :: mthlim
 
-      !open(55,file='claw3ez.data',status='old',form='formatted')
+      integer :: itmp
+      double precision :: dtmp
+      logical :: outaux_once, output_t0, use_fwaves
+      integer :: output_format
+      integer, dimension(:), allocatable :: iout_q, iout_aux
+
       call opendatafile(55, 'claw.data')
       open(10,file='fort.info',status='unknown',form='formatted')
 c
 c
 c     # Read the input in standard form from claw2ez.data:
 
-c     domain variables
       read(55,*) ndim    ! Not actually used, but the modern Python setup writes it
-      read(55,*) mx
-      read(55,*) my
-      read(55,*) mz
+      read(55,*) xlower, ylower, zlower
+      read(55,*) xupper, yupper, zupper
+      read(55,*) mx, my, mz
+      read(55,*) meqn
+      read(55,*) mwaves
+      read(55,*) maux
+      read(55,*) t0
 
-c     i/o variables
-      read(55,*) nout
       read(55,*) outstyle
       if (outstyle.eq.1) then
-          read(55,*) tfinal
-          nstepout = 1
-        elseif (outstyle.eq.2) then
-          read(55,*) (tout(i), i=1,nout)
-          nstepout = 1
-        elseif (outstyle.eq.3) then
-          read(55,*) nstepout, nstop
-          nout = nstop
-        endif
+         read(55,*) nout
+         read(55,*) tfinal
+         read(55,*) output_t0    ! Not currently used
+         nstepout = 1
+      else if (outstyle.eq.2) then
+         read(55,*) (tout(i), i=1,nout)
+         nstepout = 1
+      else if (outstyle.eq.3) then
+         read(55,*) nstepout, nstop
+         nout = nstop
+      end if
 
+      read(55,*) output_format
+      allocate(iout_q(meqn))
+      allocate(iout_aux(maux))
+      read(55,*) (iout_q(i), i = 1, meqn)
+      read(55,*) (iout_aux(i), i = 1, maux)
+      read(55,*) outaux
 
-c     timestepping variables
-      read(55,*) dtv(1)
-      read(55,*) dtv(2)
-      read(55,*) cflv(1)
-      read(55,*) cflv(2)
-      read(55,*) nv(1)
-c
+      read(55,*) dtv(1)     ! Initial dt
+      read(55,*) dtv(2)     ! Max dt
+      read(55,*) cflv(1)    ! Max CFL number
+      read(55,*) cflv(2)    ! Desired CFL number
+      read(55,*) nv(1)      ! Maximum number of steps
 
+      read(55,*) method(1)    ! Variable or fixed dt
+      read(55,*) method(2)    ! Order
+      read(55,*) method(3)    ! Transverse propagation style
+      read(55,*) method(4)    ! Verbosity
+      read(55,*) method(5)    ! Source term splitting style
+      read(55,*) method(6)    ! Index into aux for capacity function
+      method(7) = maux    ! Number of aux variables
 
-c     # input parameters for clawpack routines
-      read(55,*) method(1)
-      read(55,*) method(2)
-      read(55,*) method(3)
-      read(55,*) method(4)
-      read(55,*) method(5)
-      read(55,*) method(6)
-      read(55,*) method(7)
+      read(55,*) use_fwaves
 
-      read(55,*) meqn1
-      read(55,*) mwaves
       allocate(mthlim(mwaves))
-      read(55,*) (mthlim(mw), mw=1,mwaves)
+      read(55,*) (mthlim(i), i = 1, mwaves)
 
-      read(55,*) t0
-      read(55,*) xlower
-      read(55,*) xupper
-      read(55,*) ylower
-      read(55,*) yupper
-      read(55,*) zlower
-      read(55,*) zupper
-c
-      read(55,*) mbc1
-      read(55,*) mthbc(1)
-      read(55,*) mthbc(2)
-      read(55,*) mthbc(3)
-      read(55,*) mthbc(4)
-      read(55,*) mthbc(5)
-      read(55,*) mthbc(6)
+      read(55,*) mbc
+      read(55,*) mthbc(1), mthbc(3), mthbc(5)
+      read(55,*) mthbc(2), mthbc(4), mthbc(6)
 
-c     # check to see if we are restarting:
-      rest = .false.
-c     # The next two lines may not exist in old versions of claw3ez.data.
-c     # Jump over the second read statement if the 1st finds an EOF:
-      read(55,*,end=199,err=199) rest
+      read(55, *, err=199, end=199) rest
       if (rest) then
-         read(55,*) iframe      !# restart from data in fort.qN file, N=iframe
+         print *, 'Doing a restart run'
+         print *, 'Attempting to read restart frame number'
+         print *, 'You may need to hand-edit claw.data'
+         read(55,*) iframe      ! restart from data in fort.qN file, N=iframe
+         print *, 'Restarting from frame ', iframe
       end if
  199  continue
 
+      close(unit=55)
+
+c$$$      ! Old read code
+c$$$      read(55,*) mx
+c$$$      read(55,*) my
+c$$$      read(55,*) mz
+c$$$
+c$$$c     i/o variables
+c$$$      read(55,*) nout
+c$$$      read(55,*) outstyle
+c$$$      if (outstyle.eq.1) then
+c$$$          read(55,*) tfinal
+c$$$          nstepout = 1
+c$$$        elseif (outstyle.eq.2) then
+c$$$          read(55,*) (tout(i), i=1,nout)
+c$$$          nstepout = 1
+c$$$        elseif (outstyle.eq.3) then
+c$$$          read(55,*) nstepout, nstop
+c$$$          nout = nstop
+c$$$        endif
+c$$$
+c$$$
+c$$$c     timestepping variables
+c$$$      read(55,*) dtv(1)
+c$$$      read(55,*) dtv(2)
+c$$$      read(55,*) cflv(1)
+c$$$      read(55,*) cflv(2)
+c$$$      read(55,*) nv(1)
+c$$$c
+c$$$
+c$$$
+c$$$c     # input parameters for clawpack routines
+c$$$      read(55,*) method(1)
+c$$$      read(55,*) method(2)
+c$$$      read(55,*) method(3)
+c$$$      read(55,*) method(4)
+c$$$      read(55,*) method(5)
+c$$$      read(55,*) method(6)
+c$$$      read(55,*) method(7)
+c$$$
+c$$$      read(55,*) meqn1
+c$$$      read(55,*) mwaves
+c$$$      allocate(mthlim(mwaves))
+c$$$      read(55,*) (mthlim(mw), mw=1,mwaves)
+c$$$
+c$$$      read(55,*) t0
+c$$$      read(55,*) xlower
+c$$$      read(55,*) xupper
+c$$$      read(55,*) ylower
+c$$$      read(55,*) yupper
+c$$$      read(55,*) zlower
+c$$$      read(55,*) zupper
+c$$$c
+c$$$      read(55,*) mbc1
+c$$$      read(55,*) mthbc(1)
+c$$$      read(55,*) mthbc(2)
+c$$$      read(55,*) mthbc(3)
+c$$$      read(55,*) mthbc(4)
+c$$$      read(55,*) mthbc(5)
+c$$$      read(55,*) mthbc(6)
+c$$$
+c$$$c     # check to see if we are restarting:
+c$$$      rest = .false.
+c$$$c     # The next two lines may not exist in old versions of claw3ez.data.
+c$$$c     # Jump over the second read statement if the 1st finds an EOF:
+c$$$      read(55,*,end=199,err=199) rest
+c$$$      if (rest) then
+c$$$         read(55,*) iframe      !# restart from data in fort.qN file, N=iframe
+c$$$      end if
+c$$$ 199  continue
+
+      ! XXX Work in progress, stopped here
 
       if ((mthbc(1).eq.2 .and. mthbc(2).ne.2) .or.
      &    (mthbc(2).eq.2 .and. mthbc(1).ne.2)) then
@@ -305,6 +375,9 @@ c
   999 continue
 c
       deallocate(mthlim)
+      deallocate(iout_aux)
+      deallocate(iout_q)
+
       return
       end
 

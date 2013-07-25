@@ -10,9 +10,9 @@ LFLAGS = -g
 
 SOURCES = \
   qinit.f \
-  $(RIEMANN)/src/rpn3_vc_acoustics.f90 \
-  $(RIEMANN)/src/rpt3_vc_acoustics.f90 \
-  $(RIEMANN)/src/rptt3_vc_acoustics.f90 \
+  $(CLAW)/riemann/src/rpn3_vc_acoustics.f90 \
+  $(CLAW)/riemann/src/rpt3_vc_acoustics.f90 \
+  $(CLAW)/riemann/src/rptt3_vc_acoustics.f90 \
   setprob.f \
   bc3.f \
   setaux.f \
