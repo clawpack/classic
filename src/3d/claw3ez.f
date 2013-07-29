@@ -2,8 +2,7 @@ c
 c
 c
 c     =================================================================
-      subroutine claw3ez(mx_in,my_in,mz_in,meqn,mbc,maux,mwork,
-     &                   q,work,aux)
+      subroutine claw3ez    ! No arguments
 c     =================================================================
 c
 c     An easy-to-use clawpack driver routine for simple applications
@@ -13,29 +12,30 @@ c
 c     Author: Randall J. LeVeque
 c     Version of August, 2002 --  CLAWPACK Version 4.1
 c
+c     Modified July 2013 by Grady Lemoine to use dynamic allocation, new
+c     input file format.  Allocation of all the large arrays (aux, q,
+c     work) is delayed until the last possible moment in case any of the
+c     user code called before them is a memory hog.
 c
       implicit double precision (a-h,o-z)
       external bc3,rpn3,rpt3,rptt3,src3,b4step3
 
-      dimension    q(meqn, 1-mbc:mx_in+mbc, 1-mbc:my_in+mbc,
-     &               1-mbc:mz_in+mbc)
-      dimension  aux(maux, 1-mbc:mx_in+mbc, 1-mbc:my_in+mbc,
-     &               1-mbc:mz_in+mbc)
-      dimension work(mwork)
+      double precision, dimension(:,:,:,:), allocatable :: q, aux
+      double precision, dimension(:), allocatable :: work
+
 c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(6)
-      dimension tout(100)
+      double precision, dimension(:), allocatable :: tout
       logical rest
 c
       common /restrt_block/ tinitial, iframe
 c
       integer, dimension(:), allocatable :: mthlim
 
-      integer :: itmp
-      double precision :: dtmp
       logical :: outaux_once, output_t0, use_fwaves
-      integer :: output_format
+      integer :: output_format, dimensional_split
       integer, dimension(:), allocatable :: iout_q, iout_aux
+      integer :: allocate_status
 
       call opendatafile(55, 'claw.data')
       open(10,file='fort.info',status='unknown',form='formatted')
@@ -59,19 +59,37 @@ c     # Read the input in standard form from claw2ez.data:
          read(55,*) output_t0    ! Not currently used
          nstepout = 1
       else if (outstyle.eq.2) then
+         allocate(tout(nout), stat=allocate_status)
+         if (allocate_status .ne. 0) then
+            print *, '*** Error allocating tout array; exiting claw3ez'
+            go to 900
+         end if
          read(55,*) (tout(i), i=1,nout)
          nstepout = 1
       else if (outstyle.eq.3) then
-         read(55,*) nstepout, nstop
+         read(55,*) nstepout
+         read(55,*) nstop
+         read(55,*) output_t0
          nout = nstop
       end if
 
-      read(55,*) output_format
-      allocate(iout_q(meqn))
-      allocate(iout_aux(maux))
+      read(55,*) output_format    ! Not used yet
+      ! These iout variables are not currently used, but hang onto them
+      ! anyway in case somebody wants to use them at a future date.  The
+      ! same goes for outaux_once.
+      allocate(iout_q(meqn), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating iout_q array; exiting claw3ez'
+         go to 900    ! Exception handling, old school style
+      end if
+      allocate(iout_aux(maux), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating iout_aux array; exiting claw3ez'
+         go to 900
+      end if
       read(55,*) (iout_q(i), i = 1, meqn)
       read(55,*) (iout_aux(i), i = 1, maux)
-      read(55,*) outaux
+      read(55,*) outaux_once
 
       read(55,*) dtv(1)     ! Initial dt
       read(55,*) dtv(2)     ! Max dt
@@ -82,6 +100,13 @@ c     # Read the input in standard form from claw2ez.data:
       read(55,*) method(1)    ! Variable or fixed dt
       read(55,*) method(2)    ! Order
       read(55,*) method(3)    ! Transverse propagation style
+      read(55,*) dimensional_split    ! Whether to use dimensional splitting
+
+      ! Translate new-style Python specification of transverse
+      ! order/dimensional splitting into something the older code
+      ! understands.
+      if (dimensional_split > 0) method(3) = -1
+
       read(55,*) method(4)    ! Verbosity
       read(55,*) method(5)    ! Source term splitting style
       read(55,*) method(6)    ! Index into aux for capacity function
@@ -89,7 +114,11 @@ c     # Read the input in standard form from claw2ez.data:
 
       read(55,*) use_fwaves
 
-      allocate(mthlim(mwaves))
+      allocate(mthlim(mwaves), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating mthlim array; exiting claw3ez'
+         go to 900
+      end if
       read(55,*) (mthlim(i), i = 1, mwaves)
 
       read(55,*) mbc
@@ -102,82 +131,12 @@ c     # Read the input in standard form from claw2ez.data:
          print *, 'Attempting to read restart frame number'
          print *, 'You may need to hand-edit claw.data'
          read(55,*) iframe      ! restart from data in fort.qN file, N=iframe
-         print *, 'Restarting from frame ', iframe
+         print *, 'Planning restart from frame ', iframe
       end if
  199  continue
 
       close(unit=55)
 
-c$$$      ! Old read code
-c$$$      read(55,*) mx
-c$$$      read(55,*) my
-c$$$      read(55,*) mz
-c$$$
-c$$$c     i/o variables
-c$$$      read(55,*) nout
-c$$$      read(55,*) outstyle
-c$$$      if (outstyle.eq.1) then
-c$$$          read(55,*) tfinal
-c$$$          nstepout = 1
-c$$$        elseif (outstyle.eq.2) then
-c$$$          read(55,*) (tout(i), i=1,nout)
-c$$$          nstepout = 1
-c$$$        elseif (outstyle.eq.3) then
-c$$$          read(55,*) nstepout, nstop
-c$$$          nout = nstop
-c$$$        endif
-c$$$
-c$$$
-c$$$c     timestepping variables
-c$$$      read(55,*) dtv(1)
-c$$$      read(55,*) dtv(2)
-c$$$      read(55,*) cflv(1)
-c$$$      read(55,*) cflv(2)
-c$$$      read(55,*) nv(1)
-c$$$c
-c$$$
-c$$$
-c$$$c     # input parameters for clawpack routines
-c$$$      read(55,*) method(1)
-c$$$      read(55,*) method(2)
-c$$$      read(55,*) method(3)
-c$$$      read(55,*) method(4)
-c$$$      read(55,*) method(5)
-c$$$      read(55,*) method(6)
-c$$$      read(55,*) method(7)
-c$$$
-c$$$      read(55,*) meqn1
-c$$$      read(55,*) mwaves
-c$$$      allocate(mthlim(mwaves))
-c$$$      read(55,*) (mthlim(mw), mw=1,mwaves)
-c$$$
-c$$$      read(55,*) t0
-c$$$      read(55,*) xlower
-c$$$      read(55,*) xupper
-c$$$      read(55,*) ylower
-c$$$      read(55,*) yupper
-c$$$      read(55,*) zlower
-c$$$      read(55,*) zupper
-c$$$c
-c$$$      read(55,*) mbc1
-c$$$      read(55,*) mthbc(1)
-c$$$      read(55,*) mthbc(2)
-c$$$      read(55,*) mthbc(3)
-c$$$      read(55,*) mthbc(4)
-c$$$      read(55,*) mthbc(5)
-c$$$      read(55,*) mthbc(6)
-c$$$
-c$$$c     # check to see if we are restarting:
-c$$$      rest = .false.
-c$$$c     # The next two lines may not exist in old versions of claw3ez.data.
-c$$$c     # Jump over the second read statement if the 1st finds an EOF:
-c$$$      read(55,*,end=199,err=199) rest
-c$$$      if (rest) then
-c$$$         read(55,*) iframe      !# restart from data in fort.qN file, N=iframe
-c$$$      end if
-c$$$ 199  continue
-
-      ! XXX Work in progress, stopped here
 
       if ((mthbc(1).eq.2 .and. mthbc(2).ne.2) .or.
      &    (mthbc(2).eq.2 .and. mthbc(1).ne.2)) then
@@ -200,22 +159,8 @@ c$$$ 199  continue
          stop
          endif
 
-c     # These values were passed in, but check for consistency:
 c
-      if (method(7) .ne. maux) then
-         write(6,*) '*** ERROR ***  method(7) should equal maux'
-         stop
-         endif
-      if (meqn1 .ne. meqn) then
-         write(6,*) '*** ERROR ***  meqn set wrong in input or driver'
-         stop
-         endif
-      if (mbc1 .ne. mbc) then
-         write(6,*) '*** ERROR ***  mbc set wrong in input or driver'
-         stop
-         endif
-c
-c     # check that enough storage has been allocated:
+c     # Figure out how much work space is necessary
 c
       if (method(5).lt.2) then
           narray = 1   !# only need one qwork array
@@ -223,44 +168,20 @@ c
           narray = 2   !# need two qwork arrays for Strang splitting
         endif
 
-      maxm = max0(mx_in, my_in, mz_in)
-      mwork1 = (maxm+2*mbc)*(46*meqn + mwaves + meqn*mwaves
-     &                      + 9*maux + 3)
-     &          + narray * (mx_in + 2*mbc) * (my_in + 2*mbc)
-     &                   * (mz_in + 2*mbc) * meqn
+      maxm = max0(mx, my, mz)
+      mwork = (maxm+2*mbc)*(46*meqn + mwaves + meqn*mwaves
+     &                     + 9*maux + 3)
+     &         + narray * (mx + 2*mbc) * (my + 2*mbc)
+     &                  * (mz + 2*mbc) * meqn
+
 c
 c
-      if (mx.gt.mx_in .or. my.gt.my_in .or. mz.gt.mz_in .or.
-     &    mwork.lt.mwork1) then
-c        # insufficient storage
-         maxmx1 = max0(mx,mx_in)
-         maxmy1 = max0(my,my_in)
-         maxmz1 = max0(mz,mz_in)
-         maxm1 = max0(maxmx1,maxmy1,maxmz1)
-
-         mwork1 = (maxm1+2*mbc)*(46*meqn + mwaves + meqn*mwaves
-     &                      + 9*maux + 3)
-     &          + narray * (mx_in + 2*mbc) * (my_in + 2*mbc)
-     &                   * (mz_in + 2*mbc) * meqn
-
-         ! This error should never happen with the new dynamic
-         ! allocation setup
-         write(6,*) ' '
-         write(6,*) '*** ERROR *** Insufficient storage allocated'
-         write(6,*) 'Recompile after increasing values in driver.f:'
-         write(6,611) maxmx1
-         write(6,612) maxmy1
-         write(6,613) maxmz1
-         write(6,614) mwork1
- 611     format(/,'parameter (mx_in = ',i5,')')
- 612     format('parameter (my_in = ',i5,')')
- 613     format('parameter (maxmz = ',i5,')')
- 614     format('parameter (mwork = ',i9,')',/)
-         stop
-         endif
 
       call chkmth(method,info)
-      if( info .eq. 6) stop
+      if( info .eq. 6) then
+         print *, '*** Error in method data; exiting claw3ez'
+         go to 900
+      end if
 c
 c
       write(6,*) 'running...'
@@ -283,6 +204,20 @@ c     # call user's routine setprob to set any specific parameters
 c     # or other initialization required.
 c
       call setprob
+
+c     # Allocate aux
+      if (maux > 0) then
+         allocate(aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc, 1-mbc:mz+mbc),
+     &            stat=allocate_status)
+      else
+         ! Allocate a dummy array so that dereferencing it doesn't cause
+         ! a segfault.  This may not be necessary.
+         allocate(aux(1,1,1,1), stat=allocate_status)
+      end if
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating aux array; exiting claw3ez'
+         go to 900
+      end if
 c
 c     # set aux array:
 c
@@ -290,6 +225,15 @@ c
          call setaux(mbc,mx,my,mz,xlower,ylower,
      &               zlower,dx,dy,dz,maux,aux,t0)
          endif
+
+c     # Allocate q
+      allocate(q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc, 1-mbc:mz+mbc),
+     &         stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating q array; exiting claw3ez'
+         go to 900
+      end if
+
 c
 c     # set initial conditions:
 
@@ -311,6 +255,14 @@ c        # output initial data
      &          zlower,dx,dy,dz,q,t0,iframe,aux,maux)
          write(6,601) iframe, t0
          endif
+
+      ! Allocate work array
+      allocate(work(mwork), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating work array; exiting claw3ez'
+         go to 900
+      end if
+
 c
 c     ----------
 c     Main loop:
@@ -318,6 +270,7 @@ c     ----------
 c
       tend = t0
       n0   = iframe*nstepout + 1
+
       do 100 n=n0,nout
          tstart = tend
          if (outstyle .eq. 1)  tend = tstart + dtout
@@ -333,7 +286,7 @@ c        # check to see if an error occured:
          if (info .ne. 0) then
             write(6,*) 'claw3ez aborting: Error return from claw3',
      &                 ' with info =',info
-            go to 999
+            go to 900
             endif
 c
          dtv(1) = dtv(5)  !# use final dt as starting value on next call
@@ -372,11 +325,16 @@ c
 c
   100    continue
 c
-  999 continue
+ 900  continue
 c
-      deallocate(mthlim)
-      deallocate(iout_aux)
-      deallocate(iout_q)
+      ! Destructor, old school style
+      if (allocated(work))     deallocate(work)
+      if (allocated(q))        deallocate(q)
+      if (allocated(aux))      deallocate(aux)
+      if (allocated(mthlim))   deallocate(mthlim)
+      if (allocated(iout_aux)) deallocate(iout_aux)
+      if (allocated(iout_q))   deallocate(iout_q)
+      if (allocated(tout))     deallocate(tout)
 
       return
       end
