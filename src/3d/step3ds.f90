@@ -29,7 +29,7 @@
 !     #
 !     #       when also possible reductions in flux3 are included.
 !     #       However, this term is small compared to the dominating
-!     #       term (mx+2num_ghost)(my+2mb)*(mz+2num_ghost).
+!     #       term (mx+2num_ghost)(my+2num_ghost)*(mz+2num_ghost).
 !     #-----------------------------------------------------------------
 
     implicit real*8(a-h,o-z)
