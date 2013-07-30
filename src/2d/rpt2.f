@@ -20,18 +20,22 @@ c     #    and up-going flux difference bpasdq (= B^+ A^* \Delta q)
 c
 c
       implicit double precision (a-h,o-z)
-      dimension     ql(1-mbc:maxm+mbc, meqn)
-      dimension     qr(1-mbc:maxm+mbc, meqn)
-      dimension   asdq(1-mbc:maxm+mbc, meqn)
-      dimension bmasdq(1-mbc:maxm+mbc, meqn)
-      dimension bpasdq(1-mbc:maxm+mbc, meqn)
+      dimension     ql(meqn,1-mbc:maxm+mbc)
+      dimension     qr(meqn,1-mbc:maxm+mbc)
+      dimension   asdq(meqn,1-mbc:maxm+mbc)
+      dimension bmasdq(meqn,1-mbc:maxm+mbc)
+      dimension bpasdq(meqn,1-mbc:maxm+mbc)
+      dimension   aux1(maux,1-mbc:maxm+mbc)
+      dimension   aux2(maux,1-mbc:maxm+mbc)
+      dimension   aux3(maux,1-mbc:maxm+mbc)
 c
       do i = 2-mbc, mx+mbc
          do m=1,meqn
-            bmasdq(i,m) = 0.d0
-            bpasdq(i,m) = 0.d0
+            bmasdq(m,i) = 0.d0
+            bpasdq(m,i) = 0.d0
             enddo
          enddo
 c
       return
       end
+

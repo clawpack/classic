@@ -5,7 +5,8 @@ c      =======================================================
 c      =======================================================
 c
        implicit double precision (a-h,o-z)
-       dimension    q(1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, meqn)
+       dimension   q(meqn, 1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
+       dimension aux(maux, 1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
 c
 c      # dummy subroutine for use when equation has no source term.
 c      # If method(5)=0 then this routine is never called, but its
