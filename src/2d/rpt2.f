@@ -3,7 +3,7 @@ c
 c     =====================================================
       subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,
      &                  ql,qr,aux1,aux2,aux3,
-     &                  ilr,asdq,bmasdq,bpasdq)
+     &                  ilr,asdq,bmasdq,bpasdq,num_aux)
 c     =====================================================
 c
 c     # Riemann solver in the transverse direction.

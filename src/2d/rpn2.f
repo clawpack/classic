@@ -3,7 +3,7 @@ c
 c
 c     =====================================================
       subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,
-     &                  wave,s,amdq,apdq)
+     &                  wave,s,amdq,apdq,maux)
 c     =====================================================
 c
 c     # Solve Riemann problems for the 2D hyperbolic problem.

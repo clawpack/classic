@@ -1,6 +1,6 @@
 c
 c     =====================================================
-      subroutine restart(maxmx,maxmy,meqn,mbc,mx,my,
+      subroutine restart(meqn,mbc,mx,my,
      &      xlower,ylower,dx,dy,q)
 c     =====================================================
 c
@@ -8,7 +8,7 @@ c     # Set initial conditions for q.
 c
       implicit double precision (a-h,o-z)
 c
-      dimension q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+      dimension q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
       character*10 fname1, fname2
       common /restrt_block/ tinitial, iframe
 
