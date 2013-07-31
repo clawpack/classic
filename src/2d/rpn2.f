@@ -3,7 +3,7 @@ c
 c
 c     =====================================================
       subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,
-     &                  wave,s,amdq,apdq)
+     &                  wave,s,amdq,apdq,maux)
 c     =====================================================
 c
 c     # Solve Riemann problems for the 2D hyperbolic problem.
@@ -34,15 +34,18 @@ c
 c
       implicit double precision (a-h,o-z)
 c
-      dimension wave(1-mbc:maxm+mbc, meqn, mwaves)
-      dimension    s(1-mbc:maxm+mbc, mwaves)
-      dimension   ql(1-mbc:maxm+mbc, meqn)
-      dimension   qr(1-mbc:maxm+mbc, meqn)
-      dimension  apdq(1-mbc:maxm+mbc, meqn)
-      dimension  amdq(1-mbc:maxm+mbc, meqn)
+      dimension wave(meqn,mwaves,1-mbc:maxm+mbc)
+      dimension    s(mwaves,1-mbc:maxm+mbc)
+      dimension   ql(meqn,1-mbc:maxm+mbc)
+      dimension   qr(meqn,1-mbc:maxm+mbc)
+      dimension apdq(meqn,1-mbc:maxm+mbc)
+      dimension amdq(meqn,1-mbc:maxm+mbc)
+      dimension auxl(maux,1-mbc:maxm+mbc)
+      dimension auxr(maux,1-mbc:maxm+mbc)
 c
       write(6,*) 'You must provide a valid Riemann solver'
       stop
 
       return
       end
+

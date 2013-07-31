@@ -1,7 +1,7 @@
 c
 c
 c =========================================================
-      subroutine out2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,
+      subroutine out2(meqn,mbc,mx,my,xlower,ylower,
      &                 dx,dy,q,t,iframe,aux,maux)
 c =========================================================
 c
@@ -43,8 +43,8 @@ c
       implicit double precision (a-h,o-z)
       include 'netcdf.inc'
       
-      dimension   q(1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, meqn)
-      dimension aux(1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, maux)
+      dimension   q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+      dimension aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
       character*10 fname1, fname2, fname3
       logical outaux,do_ascii
             
@@ -145,8 +145,8 @@ c
           do m=1,meqn
 c            # exponents with more than 2 digits cause problems reading
 c            # into matlab... reset tiny values to zero:
-             if (dabs(q(i,j,m)) .lt. 1d-99) q(i,j,m) = 0.d0
-             grid(i,j,m)=q(i,j,m)
+             if (dabs(q(m,i,j)) .lt. 1d-99) q(m,i,j) = 0.d0
+             grid(i,j,m)=q(m,i,j)
              enddo
               if (do_ascii) then write(50,1005) (grid(i,j,m), m=1,meqn)
          enddo
@@ -189,10 +189,10 @@ c     # also output the aux arrays:
             do m=1,maux
 c              # exponents with more than 2 digits cause problems reading
 c              # into matlab... reset tiny values to zero:
-               if (dabs(aux(i,j,m)) .lt. 1d-99) aux(i,j,m) = 0.d0
+               if (dabs(aux(m,i,j)) .lt. 1d-99) aux(m,i,j) = 0.d0
             enddo
 c
-            write(70,1005) (aux(i,j,m), m=1,maux)
+            write(70,1005) (aux(m,i,j), m=1,maux)
 c
   110       continue
          write(70,*) ' '
@@ -214,3 +214,4 @@ c
 
       return
       end
+

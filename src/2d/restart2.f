@@ -1,6 +1,6 @@
 c
 c     =====================================================
-      subroutine restart(maxmx,maxmy,meqn,mbc,mx,my,
+      subroutine restart(meqn,mbc,mx,my,
      &      xlower,ylower,dx,dy,q)
 c     =====================================================
 c
@@ -8,7 +8,7 @@ c     # Set initial conditions for q.
 c
       implicit double precision (a-h,o-z)
 c
-      dimension q(1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, meqn)
+      dimension q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
       character*10 fname1, fname2
       common /restrt_block/ tinitial, iframe
 
@@ -40,7 +40,7 @@ c     # Test for compatibility of grid resolution.
 c     # Read variables in from old fort.qXXXX file.
       do j = 1,my
          do i = 1,mx
-            read(iunit,*) (q(i,j,m),m=1,meqn)
+            read(iunit,*) (q(m,i,j),m=1,meqn)
          enddo
       enddo
       close(iunit)
@@ -64,3 +64,4 @@ c     # Read initial time in from fort.tXXXX file.
 
       return
       end
+

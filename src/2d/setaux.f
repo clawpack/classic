@@ -1,5 +1,5 @@
 c     ============================================
-      subroutine setaux(maxmx,maxmy,mbc,mx,my,xlower,ylower,dx,dy,
+      subroutine setaux(mbc,mx,my,xlower,ylower,dx,dy,
      &                  maux,aux)
 c     ============================================
 c
@@ -8,7 +8,8 @@ c     # dummy routine when no auxiliary arrays
 c
 c     
       implicit double precision (a-h,o-z)
-c     dimension aux(1-mbc:maxmx+mbc,1-mbc:maxmy+mbc, maux)
+      dimension aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 c
        return
        end
+

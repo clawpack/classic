@@ -1,7 +1,7 @@
 c
 c
 c     ==========================================================
-      subroutine dimsp2(maxm,maxmx,maxmy,meqn,mwaves,mbc,mx,my,
+      subroutine dimsp2(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                  qold,qnew,aux,dx,dy,dt,method,mthlim,cfl,
      &                  cflv,qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
      &                  aux1,aux2,aux3,work,mwork,rpn2,rpt2)
@@ -25,20 +25,20 @@ c     # conditions are handled properly.
 c
       implicit double precision (a-h,o-z)
       external rpn2,rpt2
-      dimension qold(1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, meqn)
-      dimension qnew(1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, meqn)
-      dimension  q1d(1-mbc:maxm+mbc, meqn)
+      dimension qold(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+      dimension qnew(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+      dimension  q1d(meqn,1-mbc:maxm+mbc)
       dimension cflv(4)
-      dimension qadd(1-mbc:maxm+mbc, meqn)
-      dimension fadd(1-mbc:maxm+mbc, meqn)
-      dimension gadd(1-mbc:maxm+mbc, meqn, 2)
-      dimension aux(1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, *)
-      dimension aux1(1-mbc:maxm+mbc, *)
-      dimension aux2(1-mbc:maxm+mbc, *)
-      dimension aux3(1-mbc:maxm+mbc, *)
+      dimension qadd(meqn,1-mbc:maxm+mbc)
+      dimension fadd(meqn,1-mbc:maxm+mbc)
+      dimension gadd(meqn,1-mbc:maxm+mbc,2)
+      dimension aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
+      dimension aux1(maux,1-mbc:maxm+mbc)
+      dimension aux2(maux,1-mbc:maxm+mbc)
+      dimension aux3(maux,1-mbc:maxm+mbc)
 
-      dimension dtdx1d(1-mbc:maxmx+mbc)
-      dimension dtdy1d(1-mbc:maxmx+mbc)
+      dimension dtdx1d(1-mbc:mx+mbc)
+      dimension dtdy1d(1-mbc:mx+mbc)
       dimension method(7),mthlim(mwaves)
       dimension work(mwork)
 
@@ -49,15 +49,16 @@ c
       dt2 = dt/2.d0
 c
       if( method(3) .eq. -2 )then
-          call step2ds(maxm,maxmx,maxmy,meqn,mwaves,mbc,mx,my,
+          call step2ds(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                 qold,qnew,aux,dx,dy,dt2,method,mthlim,cflx,
      &                 qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &                 aux1,aux2,aux3,work,mwork,rpn2,rpt2,1)
+     &                 aux1,aux2,aux3,work,mwork,1,.false.,rpn2,rpt2)
+          ! The 1 means X-dir sweeps; the .false. is for using f-waves
       else
-          call step2ds(maxm,maxmx,maxmy,meqn,mwaves,mbc,mx,my,
+          call step2ds(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                 qold,qnew,aux,dx,dy,dt,method,mthlim,cflx,
      &                 qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &                 aux1,aux2,aux3,work,mwork,rpn2,rpt2,1)
+     &                 aux1,aux2,aux3,work,mwork,1,.false.,rpn2,rpt2)
       endif
 c
       if (cflx .gt. cflv(1)) then
@@ -68,10 +69,10 @@ c        # Abort if the Courant number was too large in x-sweep
 c
 c     # Take full step in y-direction
 c
-      call step2ds(maxm,maxmx,maxmy,meqn,mwaves,mbc,mx,my,
+      call step2ds(maxm,meqn,mwaves,maux,mbc,mx,my,
      &             qnew,qnew,aux,dx,dy,dt,method,mthlim,cfly,
      &             qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &             aux1,aux2,aux3,work,mwork,rpn2,rpt2,2)
+     &             aux1,aux2,aux3,work,mwork,2,.false.,rpn2,rpt2)
 c
       cfl = dmax1(cflx,cfly)
 c
@@ -85,12 +86,13 @@ c           # Abort if the Courant number was too large in y-sweep
             cfl = cfly
             return
             endif
-          call step2ds(maxm,maxmx,maxmy,meqn,mwaves,mbc,mx,my,
+          call step2ds(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                 qnew,qnew,aux,dx,dy,dt2,method,mthlim,cflx,
      &                 qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &                 aux1,aux2,aux3,work,mwork,rpn2,rpt2,1)
+     &                 aux1,aux2,aux3,work,mwork,1,.false.,rpn2,rpt2)
           cfl = dmax1(cfl,cflx)
       endif
 c
       return
       end
+
