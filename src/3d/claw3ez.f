@@ -223,7 +223,7 @@ c     # set aux array:
 c
       if (maux .gt. 0)  then
          call setaux(mbc,mx,my,mz,xlower,ylower,
-     &               zlower,dx,dy,dz,maux,aux,t0)
+     &               zlower,dx,dy,dz,maux,aux)
          endif
 
 c     # Allocate q
