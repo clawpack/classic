@@ -18,13 +18,8 @@ c
       double precision, dimension(:,:,:), allocatable :: q, aux
       double precision, dimension(:), allocatable :: work, tout
       integer, dimension(:), allocatable :: mthlim, iout_q, iout_aux
-c$$$      dimension  aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-c$$$      dimension    q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
-c$$$      dimension work(mwork)
-c$$$      dimension mthlim(mwaves)
 c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(4)
-c$$$      dimension tout(100)
       integer :: allocate_status, dimensional_split, outstyle
       logical :: rest, outaux_once, use_fwaves, output_t0
       character*12 fname
@@ -87,14 +82,19 @@ c
          print *, '*** Error allocating iout_q array; exiting claw2ez'
          go to 900    ! Exception handling, old school style
       end if
-      allocate(iout_aux(maux), stat=allocate_status)
-      if (allocate_status .ne. 0) then
-         print *, '*** Error allocating iout_aux array; exiting claw2ez'
-         go to 900
-      end if
       read(55,*) (iout_q(i), i = 1, meqn)
-      read(55,*) (iout_aux(i), i = 1, maux)
-      read(55,*) outaux_once
+      if (maux > 0) then
+         allocate(iout_aux(maux), stat=allocate_status)
+         if (allocate_status .ne. 0) then
+            print *, '*** Error allocating iout_aux array;',
+     &               ' exiting claw2ez'
+            go to 900
+         end if
+         read(55,*) (iout_aux(i), i = 1, maux)
+         read(55,*) outaux_once
+      else
+         outaux_once = .false.    ! Just to initialize
+      end if
 
       read(55,*) dtv(1)     ! Initial dt
       read(55,*) dtv(2)     ! Max dt
