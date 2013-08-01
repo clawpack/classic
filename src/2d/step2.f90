@@ -79,39 +79,39 @@
 
     if (index_capa == 0) then
     !        # no capa array:
-        do 5 i=1-num_ghost,maxm+num_ghost
+        do i=1-num_ghost,maxm+num_ghost
             dtdx1d(i) = dtdx
             dtdy1d(i) = dtdy
-        5 END DO
+        end do
     endif
 
 
 !     # perform x-sweeps
 !     ==================
 
-    do 50 j = 0,my+1
+    do j = 0,my+1
     
     !        # copy data along a slice into 1d arrays:
-        do 21 m=1,num_eqn
-            do 20 i = 1-num_ghost, mx+num_ghost
+        do i = 1-num_ghost, mx+num_ghost
+            do m=1,num_eqn
                 q1d(m,i) = qold(m,i,j)
-            20 END DO
-        21 END DO
+            end do
+        end do
     
         if (index_capa > 0)  then
-            do 22 i = 1-num_ghost, mx+num_ghost
+            do i = 1-num_ghost, mx+num_ghost
                 dtdx1d(i) = dtdx/aux(index_capa,i,j)
-            22 END DO
+            end do
         endif
     
         if (num_aux > 0)  then
-            do 25 ma=1,num_aux
-                do 24 i = 1-num_ghost, mx+num_ghost
+            do i = 1-num_ghost, mx+num_ghost
+                do ma=1,num_aux
                     aux1(ma,i) = aux(ma,i,j-1)
                     aux2(ma,i) = aux(ma,i,j  )
                     aux3(ma,i) = aux(ma,i,j+1)
-                24 END DO
-            25 END DO
+                end do
+            end do
         endif
     
     !     # Store the value of j along this slice in the common block
@@ -136,21 +136,21 @@
         if (index_capa == 0) then
         
         !            # no capa array.  Standard flux differencing:
-            do 31 m=1,num_eqn
-                do 30 i=1,mx
+            do i=1,mx
+                do m=1,num_eqn
                     qnew(m,i,j) = qnew(m,i,j) + qadd(m,i) &
                     - dtdx * (fadd(m,i+1) - fadd(m,i)) &
                     - dtdy * (gadd(m,2,i) - gadd(m,1,i))
                     qnew(m,i,j-1) = qnew(m,i,j-1) - dtdy * gadd(m,1,i)
                     qnew(m,i,j+1) = qnew(m,i,j+1) + dtdy * gadd(m,2,i)
-                30 END DO
-            31 END DO
+                end do
+            end do
         
         else
         
         !            # with capa array.
-            do 41 m=1,num_eqn
-                do 40 i=1,mx
+            do i=1,mx
+                do m=1,num_eqn
                     qnew(m,i,j) = qnew(m,i,j) + qadd(m,i) &
                     - (dtdx * (fadd(m,i+1) - fadd(m,i)) &
                     +  dtdy * (gadd(m,2,i) - gadd(m,1,i))) &
@@ -159,10 +159,10 @@
                     / aux(index_capa,i,j-1)
                     qnew(m,i,j+1) = qnew(m,i,j+1) + dtdy * gadd(m,2,i) &
                     / aux(index_capa,i,j+1)
-                40 END DO
-            41 END DO
+                end do
+            end do
         endif
-    50 END DO
+    end do    ! End x sweeps
 
 
 
@@ -170,29 +170,29 @@
 !     ==================
 
 
-    do 100 i = 0, mx+1
+    do i = 0, mx+1
     
     !        # copy data along a slice into 1d arrays:
-        do 71 m=1,num_eqn
-            do 70 j = 1-num_ghost, my+num_ghost
+        do j = 1-num_ghost, my+num_ghost
+            do m=1,num_eqn
                 q1d(m,j) = qold(m,i,j)
-            70 END DO
-        71 END DO
+            end do
+        end do
     
         if (index_capa > 0)  then
-            do 72 j = 1-num_ghost, my+num_ghost
+            do j = 1-num_ghost, my+num_ghost
                 dtdy1d(j) = dtdy / aux(index_capa,i,j)
-            72 END DO
+            end do
         endif
     
         if (num_aux > 0)  then
-            do 75 ma=1,num_aux
-                do 74 j = 1-num_ghost, my+num_ghost
+            do j = 1-num_ghost, my+num_ghost
+                do ma=1,num_aux
                     aux1(ma,j) = aux(ma,i-1,j)
                     aux2(ma,j) = aux(ma,i,  j)
                     aux3(ma,j) = aux(ma,i+1,j)
-                74 END DO
-            75 END DO
+                end do
+            end do
         endif
     
     
@@ -219,21 +219,21 @@
         if (index_capa == 0) then
         
         !            # no capa array.  Standard flux differencing:
-            do 81 m=1,num_eqn
-                do 80 j=1,my
+            do j=1,my
+                do m=1,num_eqn
                     qnew(m,i,j) = qnew(m,i,j) + (qadd(m,j) &
                     - dtdy * (fadd(m,j+1) - fadd(m,j)) &
                     - dtdx * (gadd(m,2,j) - gadd(m,1,j)))
                     qnew(m,i-1,j) = qnew(m,i-1,j) - dtdx * gadd(m,1,j)
                     qnew(m,i+1,j) = qnew(m,i+1,j) + dtdx * gadd(m,2,j)
-                80 END DO
-            81 END DO
+                end do
+            end do
         
         else
         
         !            # with capa array.
-            do 91 m=1,num_eqn
-                do 90 j=1,my
+            do j=1,my
+                do m=1,num_eqn
                     qnew(m,i,j) = qnew(m,i,j) + qadd(m,j) &
                     - (dtdy * (fadd(m,j+1) - fadd(m,j)) &
                     + dtdx * (gadd(m,2,j) - gadd(m,1,j))) &
@@ -242,10 +242,10 @@
                     / aux(index_capa,i-1,j)
                     qnew(m,i+1,j) = qnew(m,i+1,j) + dtdx * gadd(m,2,j) &
                     / aux(index_capa,i+1,j)
-                90 END DO
-            91 END DO
+                end do
+            end do
         endif
-    100 END DO
+    end do    ! End y sweeps
 
     return
     end subroutine step2
