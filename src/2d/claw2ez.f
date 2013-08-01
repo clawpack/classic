@@ -16,9 +16,8 @@ c
       external bc2,rpn2,rpt2,src2,b4step2
 
       double precision, dimension(:,:,:), allocatable :: q, aux
-      double precision, dimension(:), allocatable :: work
-      integer, dimension(:), allocatable :: mthlim
-      double precision, dimension(:), allocatable :: tout
+      double precision, dimension(:), allocatable :: work, tout
+      integer, dimension(:), allocatable :: mthlim, iout_q, iout_aux
 c$$$      dimension  aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 c$$$      dimension    q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
 c$$$      dimension work(mwork)
@@ -26,7 +25,8 @@ c$$$      dimension mthlim(mwaves)
 c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(4)
 c$$$      dimension tout(100)
-      logical rest
+      integer :: allocate_status, dimensional_split
+      logical :: rest, outaux_once, use_fwaves
       character*12 fname
 c
       common /restrt_block/ tinitial, iframe
@@ -41,111 +41,124 @@ c
 c
 c     # Read the input in standard form from claw.data:
 c
-c     Number of space dimensions:  ## New in 4.4
       read(55,*) ndim
-c
-c     ## The remainder is unchanged from 4.3:
 
-
-
-c     domain variables
-      read(55,*) mx
-      read(55,*) my
-      write(6,*) '+++ mx,my: ', mx,my
-
-c     i/o variables
-      read(55,*) nout
-      read(55,*) outstyle
-      if (outstyle.eq.1) then
-          read(55,*) tfinal
-          nstepout = 1
-        elseif (outstyle.eq.2) then
-          read(55,*) (tout(i), i=1,nout)
-          nstepout = 1
-        elseif (outstyle.eq.3) then
-          read(55,*) nstepout, nstop
-          nout = nstop
-        endif
-
-
-c     timestepping variables
-      read(55,*) dtv(1)
-      read(55,*) dtv(2)
-      read(55,*) cflv(1)
-      read(55,*) cflv(2)
-      read(55,*) nv(1)
-c
-
-
-c     # input parameters for clawpack routines
-      read(55,*) method(1)
-      read(55,*) method(2)
-      read(55,*) method(3)
-      read(55,*) method(4)
-      read(55,*) method(5)
-      read(55,*) method(6)
-      read(55,*) method(7)
-
-      read(55,*) meqn1
-      read(55,*) mwaves1
-      read(55,*) (mthlim(mw), mw=1,mwaves1)
+      read(55,*) xlower, ylower
+      read(55,*) xupper, yupper
+      read(55,*) mx, my
+      print *, '+++ mx, my = ', mx, my    ! Like in 4.6
+      read(55,*) meqn
+      read(55,*) mwaves
+      read(55,*) maux
+      read(55,*) t0
 
       read(55,*) t0
-      read(55,*) xlower
-      read(55,*) xupper
-      read(55,*) ylower
-      read(55,*) yupper
-c
-      read(55,*) mbc1
-      read(55,*) mthbc(1)
-      read(55,*) mthbc(2)
-      read(55,*) mthbc(3)
-      read(55,*) mthbc(4)
+      if (outstyle == 1) then
+         read(55,*) nout
+         read(55,*) tfinal
+         read(55,*) output_t0    ! Not currently used
+         nstepout = 1
+      else if (outstyle == 2) then
+         read(55,*) nout
+         allocate(tout(nout), stat=allocate_status)
+         if (allocate_status .ne. 0) then
+            print *, '*** Error allocating tout array; exiting claw2ez'
+            go to 900
+         end if
+         read(55,*) (tout(i), i=1,nout)
+         nstepout = 1
+      else if (outstyle == 3) then
+         read(55,*) nstepout
+         read(55,*) nstop
+         read(55,*) output_t0
+         nout = nstop
+      else
+         print *, '*** Unrecognized output style ', outstyle
+         print *, '*** Exiting claw2ez'
+         go to 900
+      end if
 
-c     # check to see if we are restarting:
+      read(55,*) output_format    ! Not used yet
+      ! These iout variables are not currently used, but hang onto them
+      ! anyway in case somebody wants to use them at a future date.  The
+      ! same goes for outaux_once.
+      allocate(iout_q(meqn), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating iout_q array; exiting claw2ez'
+         go to 900    ! Exception handling, old school style
+      end if
+      allocate(iout_aux(maux), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating iout_aux array; exiting claw2ez'
+         go to 900
+      end if
+      read(55,*) (iout_q(i), i = 1, meqn)
+      read(55,*) (iout_aux(i), i = 1, maux)
+      read(55,*) outaux_once
+
+      read(55,*) dtv(1)     ! Initial dt
+      read(55,*) dtv(2)     ! Max dt
+      read(55,*) cflv(1)    ! Max CFL number
+      read(55,*) cflv(2)    ! Desired CFL number
+      read(55,*) nv(1)      ! Maximum number of steps
+
+      read(55,*) method(1)    ! Variable or fixed dt
+      read(55,*) method(2)    ! Order
+      read(55,*) method(3)    ! Transverse propagation style
+      read(55,*) dimensional_split    ! Whether to use dimensional splitting
+
+      ! Translate new-style Python specification of transverse
+      ! order/dimensional splitting into something the older code
+      ! understands.
+      if (dimensional_split > 0) method(3) = -dimensional_split
+
+      read(55,*) method(4)    ! Verbosity
+      read(55,*) method(5)    ! Source term splitting style
+      read(55,*) method(6)    ! Index into aux for capacity function
+      method(7) = maux    ! Number of aux variables
+
+      read(55,*) use_fwaves
+
+      allocate(mthlim(mwaves), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating mthlim array; exiting claw2ez'
+         go to 900
+      end if
+      read(55,*) (mthlim(i), i = 1, mwaves)
+
+      read(55,*) mbc
+      read(55,*) mthbc(1), mthbc(3)
+      read(55,*) mthbc(2), mthbc(4)
+
       rest = .false.
-c     # The next two lines may not exist in old versions of claw2ez.data.
-c     # Jump over the second read statement if the 1st finds an EOF:
-      read(55,*,end=199,err=199) rest
-      read(55,*) iframe   !# restart from data in fort.qN file, N=iframe
+      read(55, *, err=199, end=199) rest
+      if (rest) then
+         print *, 'Doing a restart run'
+         print *, 'Attempting to read restart frame number'
+         print *, 'You may need to hand-edit claw.data'
+         read(55,*) iframe      ! restart from data in fort.qN file, N=iframe
+         print *, 'Planning restart from frame ', iframe
+      end if
  199  continue
 
+      close(unit=55)
 
       if ((mthbc(1).eq.2 .and. mthbc(2).ne.2) .or.
      &    (mthbc(2).eq.2 .and. mthbc(1).ne.2)) then
          write(6,*) '*** ERROR ***  periodic boundary conditions'
          write(6,*) 'require mthbc(1) and mthbc(2) BOTH be set to 2'
-         stop
+         go to 900
          endif
 
       if ((mthbc(3).eq.2 .and. mthbc(4).ne.2) .or.
      &    (mthbc(4).eq.2 .and. mthbc(3).ne.2)) then
          write(6,*) '*** ERROR ***  periodic boundary conditions'
          write(6,*) 'require mthbc(3) and mthbc(4) BOTH be set to 2'
-         stop
+         go to 900
          endif
 
-c     # These values were passed in, but check for consistency:
-c
-      if (method(7) .ne. maux) then
-         write(6,*) '*** ERROR ***  method(7) should equal maux'
-         stop
-         endif
-      if (meqn1 .ne. meqn) then
-         write(6,*) '*** ERROR ***  meqn set wrong in input or driver'
-         stop
-         endif
-      if (mwaves1 .ne. mwaves) then
-         write(6,*) '*** ERROR ***  mwaves set wrong in input or driver'
-         stop
-         endif
-      if (mbc1 .ne. mbc) then
-         write(6,*) '*** ERROR ***  mbc set wrong in input or driver'
-         stop
-         endif
-c
-c     # check that enough storage has been allocated:
-c
+c     # Figure out size of work array needed
+
       if (method(5).lt.2) then
           narray = 1   !# only need one qwork array
         else
@@ -153,9 +166,9 @@ c
         endif
 
       maxm = max0(mx, my)
-      mwork1 = (maxm+2*mbc)*(10*meqn + mwaves + meqn*mwaves
-     &                      + 3*maux + 2)
-     &          + narray * (mx + 2*mbc) * (my + 2*mbc) * meqn
+      mwork = (maxm+2*mbc)*(10*meqn + mwaves + meqn*mwaves
+     &                     + 3*maux + 2)
+     &         + narray * (mx + 2*mbc) * (my + 2*mbc) * meqn
 c
 c
       write(6,*) 'running...'
@@ -177,6 +190,20 @@ c     # call user's routine setprob to set any specific parameters
 c     # or other initialization required.
 c
       call setprob
+
+c     # Allocate aux
+      if (maux > 0) then
+         allocate(aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc),
+     &            stat=allocate_status)
+      else
+         ! Allocate a dummy array so that dereferencing it doesn't cause
+         ! a segfault.  This may not be necessary.
+         allocate(aux(1,1,1), stat=allocate_status)
+      end if
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating aux array; exiting claw2ez'
+         go to 900
+      end if
 c
 c     # set aux array:
 c
@@ -184,6 +211,15 @@ c
          call setaux(mbc,mx,my,xlower,ylower,dx,dy,
      &               maux,aux)
          endif
+
+c     # Allocate q
+      allocate(q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc),
+     &         stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating q array; exiting claw2ez'
+         go to 900
+      end if
+
 c
 c     # set initial conditions:
 c
@@ -204,6 +240,13 @@ c        # output initial data
      &          q,t0,iframe,aux,maux)
          write(6,601) iframe, t0
          endif
+
+      ! Allocate work array
+      allocate(work(mwork), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating work array; exiting claw2ez'
+         go to 900
+      end if
 
 c
 c     ----------
@@ -227,7 +270,7 @@ c        # check to see if an error occured:
          if (info .ne. 0) then
             write(6,*) 'claw2ez aborting: Error return from claw2',
      &                 ' with info =',info
-            go to 999
+            go to 900
             endif
 c
          dtv(1) = dtv(5)  !# use final dt as starting value on next call
@@ -266,7 +309,14 @@ c
 c
   100    continue
 c
-  999 continue
+  900 continue
+      if (allocated(q))        deallocate(q)
+      if (allocated(aux))      deallocate(aux)
+      if (allocated(work))     deallocate(work)
+      if (allocated(mthlim))   deallocate(mthlim)
+      if (allocated(tout))     deallocate(tout)
+      if (allocated(iout_q))   deallocate(iout_q)
+      if (allocated(iout_aux)) deallocate(iout_aux)
 c
       return
       end

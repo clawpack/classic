@@ -37,6 +37,8 @@ c     Routine to write netcdf files in the classic format
 !        #           dim_names     : a list of dimensions [dimx,dimy]
 !        #           dim<x,y>.low  : The lowest dimension value 
 !        #           dim<x,y>.d    : The distance between grid points 
+!
+!     Cleaned up by Grady Lemoine, 2013-08-01
 c -----------------------------------------------------
 
 c
@@ -51,14 +53,13 @@ c
       real(kind=8) time
       integer ncid,rcode
       integer timeid,tVarID,meqnID,ngridsVarID,nauxVarID,ndimVarID
-      integer dimxid,dimyid,xlowid,ylowid,dxid,dyid
+      integer dimxid,dimyid
       integer gridid
       integer ntimes
       character*2 gridstr
       character*40 dim_names
       REAL(kind=8), ALLOCATABLE  ::grid(:,:,:)
       integer nx, ny
-      real xlow,ylow
       
 
       nx=mx
@@ -80,8 +81,10 @@ c
             nstp = nstp / 10
  55      continue
 
-         if (do_ascii) then  open(unit=50,file=fname1,status='unknown',form='formatted')
-         if (do_ascii) then  open(unit=60,file=fname2,status='unknown',form='formatted')
+         if (do_ascii) open(unit=50,file=fname1,status='unknown',
+     &                      form='formatted')
+         if (do_ascii) open(unit=60,file=fname2,status='unknown',
+     &                      form='formatted')
 
 c
 c     # the following parameters are used in amrclaw where there are
@@ -148,11 +151,11 @@ c            # into matlab... reset tiny values to zero:
              if (dabs(q(m,i,j)) .lt. 1d-99) q(m,i,j) = 0.d0
              grid(i,j,m)=q(m,i,j)
              enddo
-              if (do_ascii) then write(50,1005) (grid(i,j,m), m=1,meqn)
+              if (do_ascii) write(50,1005) (grid(i,j,m), m=1,meqn)
          enddo
-         if (do_ascii) then write(50,*) ' '
+         if (do_ascii) write(50,*) ' '
       enddo
-      if (do_ascii) then write(50,*) ' '
+      if (do_ascii) write(50,*) ' '
       
       rcode=NF_PUT_VARA_DOUBLE(ncid,gridid,(/1,1,1,1/),
      & (/nx,ny,meqn,1/),grid)
@@ -201,7 +204,7 @@ c
       close(unit=70)
       endif
 
-      if (do_ascii) then write(60,1000) t,meqn,ngrids,maux,2
+      if (do_ascii) write(60,1000) t,meqn,ngrids,maux,2
 
  1000 format(e26.16,'    time', /,
      &       i5,'                 meqn'/,
@@ -209,8 +212,8 @@ c
      &       i5,'                 maux'/,
      &       i5,'                 ndim'/,/)
 !c
-      if (do_ascii) then close(unit=50)
-      if (do_ascii) then close(unit=60)
+      if (do_ascii) close(unit=50)
+      if (do_ascii) close(unit=60)
 
       return
       end
