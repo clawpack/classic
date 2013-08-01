@@ -25,8 +25,8 @@ c$$$      dimension mthlim(mwaves)
 c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(4)
 c$$$      dimension tout(100)
-      integer :: allocate_status, dimensional_split
-      logical :: rest, outaux_once, use_fwaves
+      integer :: allocate_status, dimensional_split, outstyle
+      logical :: rest, outaux_once, use_fwaves, output_t0
       character*12 fname
 c
       common /restrt_block/ tinitial, iframe
@@ -52,7 +52,7 @@ c
       read(55,*) maux
       read(55,*) t0
 
-      read(55,*) t0
+      read(55,*) outstyle
       if (outstyle == 1) then
          read(55,*) nout
          read(55,*) tfinal
