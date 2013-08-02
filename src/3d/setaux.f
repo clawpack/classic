@@ -1,6 +1,6 @@
 c     ==================================================================
       subroutine setaux(mbc,mx,my,mz,xlower,ylower,
-     &                  zlower,dx,dy,dz,maux,aux,t0)
+     &                  zlower,dx,dy,dz,maux,aux)
 c     ==================================================================
 c
 c     # set auxiliary arrays 

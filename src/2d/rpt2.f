@@ -25,9 +25,9 @@ c
       dimension   asdq(meqn,1-mbc:maxm+mbc)
       dimension bmasdq(meqn,1-mbc:maxm+mbc)
       dimension bpasdq(meqn,1-mbc:maxm+mbc)
-      dimension   aux1(maux,1-mbc:maxm+mbc)
-      dimension   aux2(maux,1-mbc:maxm+mbc)
-      dimension   aux3(maux,1-mbc:maxm+mbc)
+      dimension   aux1(num_aux,1-mbc:maxm+mbc)
+      dimension   aux2(num_aux,1-mbc:maxm+mbc)
+      dimension   aux3(num_aux,1-mbc:maxm+mbc)
 c
       do i = 2-mbc, mx+mbc
          do m=1,meqn

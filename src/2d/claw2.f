@@ -510,7 +510,7 @@ c        # fixed size time steps.  Compute the number of steps:
 c             # single step mode 
               maxn = 1
            else
-              maxn = (tend - tstart + 1d-10) / dt
+              maxn = nint((tend - tstart)/dt)    ! Round to nearest int
               if (dabs(maxn*dt - (tend-tstart)) .gt.
      &                          1d-5*(tend-tstart)) then
 c                # dt doesn't divide time interval integer number of times
