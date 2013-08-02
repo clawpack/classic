@@ -83,20 +83,26 @@
     common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
     limit = .false.
-    do 5 mw=1,num_waves
+    do mw=1,num_waves
         if (mthlim(mw) > 0) limit = .TRUE. 
-    5 END DO
+    end do
 
 !     # initialize flux increments:
 !     -----------------------------
 
-    forall (m=1:num_eqn, i = 1-num_ghost: mx+num_ghost)
-    qadd(m,i) = 0.d0
-    fadd(m,i) = 0.d0
-    gadd(m,1,i) = 0.d0
-    gadd(m,2,i) = 0.d0
-    end forall
-      
+    ! Initializing qadd here is probably the least confusing approach,
+    ! given the nature of the donor-cell upwind loop below.
+    do i = 1-num_ghost, mx+num_ghost
+        do m = 1, num_eqn
+            qadd(m,i) = 0.d0
+        end do
+    end do
+
+    ! Unnecessary to init fadd to zero here because it only gets
+    ! modified by the second-order corrections
+
+    ! Unnecessary to init gadd to zero here -- can init first time
+    ! it's set instead
 
 !     # solve Riemann problem at each interface and compute Godunov updates
 !     ---------------------------------------------------------------------
@@ -105,21 +111,25 @@
     aux2,aux2,wave,s,amdq,apdq,num_aux)
 
 !     # Set qadd for the donor-cell upwind method (Godunov)
-    forall(m=1:num_eqn, i=1:mx+1)
-    qadd(m,i) = qadd(m,i) - dtdx1d(i)*apdq(m,i)
-    qadd(m,i-1) = qadd(m,i-1) - dtdx1d(i-1)*amdq(m,i)
-    end forall
+    do i = 1, mx+1
+        do m = 1, num_eqn    ! qadd(:,i-1) is still in cache from last cycle of outer loop
+            qadd(m,i-1) = qadd(m,i-1) - dtdx1d(i-1)*amdq(m,i)
+        end do
+        do m = 1, num_eqn
+            qadd(m,i) = qadd(m,i) - dtdx1d(i)*apdq(m,i)
+        end do
+    end do
 
 !     # compute maximum wave speed for checking Courant number:
     cfl1d = 0.d0
-    do 51 mw=1,num_waves
-        do 50 i=1,mx+1
+    do i=1,mx+1
+        do mw=1,num_waves
         !          # if s>0 use dtdx1d(i) to compute CFL,
         !          # if s<0 use dtdx1d(i-1) to compute CFL:
             cfl1d = dmax1(cfl1d, dtdx1d(i)*s(mw,i), &
-            -dtdx1d(i-1)*s(mw,i))
-        50 END DO
-    51 END DO
+                -dtdx1d(i-1)*s(mw,i))
+        end do
+    end do
 
     if (method(2) == 1) go to 130
 
@@ -138,27 +148,35 @@
         do i = 2-num_ghost, mx+num_ghost
         !            # modified in Version 4.3 to use average only in cqxx, not transverse
             dtdxave = 0.5d0 * (dtdx1d(i-1) + dtdx1d(i))
-            do m=1,num_eqn
+            do m = 1, num_eqn
                 cqxx(m,i) = 0.d0
-                do mw=1,num_waves
+            end do
+            do mw=1,num_waves    ! Traverse the wave array in memory-contiguous fashion
+                do m=1,num_eqn
                     cqxx(m,i) = cqxx(m,i) + dabs(s(mw,i)) &
                     * (1.d0 - dabs(s(mw,i))*dtdxave) * wave(m,mw,i)
                 enddo
-                fadd(m,i) = fadd(m,i) + 0.5d0 * cqxx(m,i)
             enddo
+            do m = 1, num_eqn
+                fadd(m,i) = 0.5d0 * cqxx(m,i)
+            end do
         enddo
     else
         do i = 2-num_ghost, mx+num_ghost
             dtdxave = 0.5d0 * (dtdx1d(i-1) + dtdx1d(i))
-            do m=1,num_eqn
+            do m = 1, num_eqn
                 cqxx(m,i) = 0.d0
-                do mw=1,num_waves
+            end do
+            do mw=1,num_waves
+                do m=1,num_eqn
                 !                 # second order corrections:
                     cqxx(m,i) = cqxx(m,i) + dsign(1.d0,s(mw,i)) &
                     * (1.d0 - dabs(s(mw,i))*dtdxave) * wave(m,mw,i)
                 enddo
-                fadd(m,i) = fadd(m,i) + 0.5d0 * cqxx(m,i)
             enddo
+            do m = 1, num_eqn
+                fadd(m,i) = 0.5d0 * cqxx(m,i)
+            end do
         enddo
     endif
 
@@ -169,10 +187,12 @@
 
     if (method(2) > 1 .AND. method(3) == 2) then
     !        # incorporate cqxx into amdq and apdq so that it is split also.
-        forall (m=1:num_eqn, i = 1: mx+1)
-        amdq(m,i) = amdq(m,i) + cqxx(m,i)
-        apdq(m,i) = apdq(m,i) - cqxx(m,i)
-        end forall
+        do i = 1, mx+1
+            do m = 1, num_eqn
+                amdq(m,i) = amdq(m,i) + cqxx(m,i)
+                apdq(m,i) = apdq(m,i) - cqxx(m,i)
+            end do
+        end do
     endif
 
 
@@ -185,12 +205,15 @@
     aux1,aux2,aux3,1,amdq,bmasdq,bpasdq,num_aux)
 
 !     # modify flux below and above by B^- A^- Delta q and  B^+ A^- Delta q:
-    forall ( m=1:num_eqn , i = 1:mx+1)
-    gadd(m,1,i-1) = gadd(m,1,i-1) - &
-    0.5d0*dtdx1d(i-1) * bmasdq(m,i)
-    gadd(m,2,i-1) = gadd(m,2,i-1) - &
-    0.5d0*dtdx1d(i-1) * bpasdq(m,i)
-    end forall
+    do i = 1, mx+1
+        ! Having two inner loops here allows traversal of gadd in memory-contiguous order
+        do m = 1, num_eqn
+            gadd(m,1,i-1) = -0.5d0*dtdx1d(i-1) * bmasdq(m,i)
+        end do
+        do m = 1, num_eqn
+            gadd(m,2,i-1) = -0.5d0*dtdx1d(i-1) * bpasdq(m,i)
+        end do
+    end do
      
 
 !     # split the right-going flux difference into down-going and up-going:
@@ -198,12 +221,14 @@
     aux1,aux2,aux3,2,apdq,bmasdq,bpasdq,num_aux)
 
 !     # modify flux below and above by B^- A^+ Delta q and  B^+ A^+ Delta q:
-    forall ( m=1:num_eqn , i = 1: mx+1)
-    gadd(m,1,i) = gadd(m,1,i) - &
-    0.5d0*dtdx1d(i) * bmasdq(m,i)
-    gadd(m,2,i) = gadd(m,2,i) - &
-    0.5d0*dtdx1d(i) * bpasdq(m,i)
-    end forall
+    do i = 1, mx+1
+        do m = 1, num_eqn
+            gadd(m,1,i) = gadd(m,1,i) - 0.5d0*dtdx1d(i) * bmasdq(m,i)
+        end do
+        do m = 1, num_eqn
+            gadd(m,2,i) = gadd(m,2,i) - 0.5d0*dtdx1d(i) * bpasdq(m,i)
+        end do
+    end do
 
     999 continue
     return
