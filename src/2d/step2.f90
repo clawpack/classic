@@ -105,19 +105,10 @@
         endif
     
         if (num_aux > 0)  then
-            ! Memory-contiguous traversal of aux arrays
             do i = 1-num_ghost, mx+num_ghost
                 do ma=1,num_aux
                     aux1(ma,i) = aux(ma,i,j-1)
-                end do
-            end do
-            do i = 1-num_ghost, mx+num_ghost
-                do ma=1,num_aux
                     aux2(ma,i) = aux(ma,i,j  )
-                end do
-            end do
-            do i = 1-num_ghost, mx+num_ghost
-                do ma=1,num_aux
                     aux3(ma,i) = aux(ma,i,j+1)
                 end do
             end do
@@ -196,15 +187,9 @@
     
         if (num_aux > 0)  then
             do j = 1-num_ghost, my+num_ghost
-                ! In-order traversal of aux array, as much as
-                ! possible.  Less effective than for Y sweeps.
                 do ma=1,num_aux
                     aux1(ma,j) = aux(ma,i-1,j)
-                end do
-                do ma=1,num_aux
                     aux2(ma,j) = aux(ma,i,  j)
-                end do
-                do ma=1,num_aux
                     aux3(ma,j) = aux(ma,i+1,j)
                 end do
             end do

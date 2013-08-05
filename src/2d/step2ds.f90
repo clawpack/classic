@@ -109,7 +109,12 @@
             endif
         
             if (num_aux > 0)  then
-                ! Traverse aux in-order
+                do i = 1-num_ghost, mx+num_ghost
+                    do ma=1,num_aux
+                        aux2(ma,i) = aux(ma,i,j)
+                    end do
+                end do
+            
                 if(j /= 1-num_ghost)then
                     do i = 1-num_ghost, mx+num_ghost
                         do ma=1,num_aux
@@ -117,12 +122,6 @@
                         end do
                     end do
                 endif
-            
-                do i = 1-num_ghost, mx+num_ghost
-                    do ma=1,num_aux
-                        aux2(ma,i) = aux(ma,i,j)
-                    end do
-                end do
             
                 if(j /= my+num_ghost)then
                     do i = 1-num_ghost, mx+num_ghost
@@ -200,9 +199,6 @@
             endif
         
             if (num_aux > 0)  then
-                ! May be useful to do do aux(:,i-1,j), then
-                ! aux(:,i,j), then aux(:,i+1,j).  Depends on whether
-                ! CPU branch-prediction hardware handles it well.
             
                 do j = 1-num_ghost, my+num_ghost
                     do ma=1,num_aux
