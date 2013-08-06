@@ -33,7 +33,7 @@ c
       integer, dimension(:), allocatable :: mthlim
 
       logical :: outaux_once, output_t0, use_fwaves
-      integer :: output_format, dimensional_split
+      integer :: output_format, dimensional_split, outstyle
       integer, dimension(:), allocatable :: iout_q, iout_aux
       integer :: allocate_status
 
@@ -59,6 +59,7 @@ c     # Read the input in standard form from claw2ez.data:
          read(55,*) output_t0    ! Not currently used
          nstepout = 1
       else if (outstyle.eq.2) then
+         read(55,*) nout
          allocate(tout(nout), stat=allocate_status)
          if (allocate_status .ne. 0) then
             print *, '*** Error allocating tout array; exiting claw3ez'
@@ -71,6 +72,10 @@ c     # Read the input in standard form from claw2ez.data:
          read(55,*) nstop
          read(55,*) output_t0
          nout = nstop
+      else
+         print *, '*** Unrecognized output style ', outstyle
+         print *, '*** Exiting claw3ez'
+         go to 900
       end if
 
       read(55,*) output_format    ! Not used yet
@@ -82,14 +87,19 @@ c     # Read the input in standard form from claw2ez.data:
          print *, '*** Error allocating iout_q array; exiting claw3ez'
          go to 900    ! Exception handling, old school style
       end if
-      allocate(iout_aux(maux), stat=allocate_status)
-      if (allocate_status .ne. 0) then
-         print *, '*** Error allocating iout_aux array; exiting claw3ez'
-         go to 900
-      end if
       read(55,*) (iout_q(i), i = 1, meqn)
-      read(55,*) (iout_aux(i), i = 1, maux)
-      read(55,*) outaux_once
+      if (maux > 0) then
+         allocate(iout_aux(maux), stat=allocate_status)
+         if (allocate_status .ne. 0) then
+            print *, '*** Error allocating iout_aux array;',
+     &               ' exiting claw3ez'
+            go to 900
+         end if
+         read(55,*) (iout_aux(i), i = 1, maux)
+         read(55,*) outaux_once
+      else
+         outaux_once = .false.    ! Just for the sake of initialization
+      end if
 
       read(55,*) dtv(1)     ! Initial dt
       read(55,*) dtv(2)     ! Max dt
@@ -125,6 +135,7 @@ c     # Read the input in standard form from claw2ez.data:
       read(55,*) mthbc(1), mthbc(3), mthbc(5)
       read(55,*) mthbc(2), mthbc(4), mthbc(6)
 
+      rest = .false.
       read(55, *, err=199, end=199) rest
       if (rest) then
          print *, 'Doing a restart run'
@@ -142,21 +153,21 @@ c     # Read the input in standard form from claw2ez.data:
      &    (mthbc(2).eq.2 .and. mthbc(1).ne.2)) then
          write(6,*) '*** ERROR ***  periodic boundary conditions'
          write(6,*) 'require mthbc(1) and mthbc(2) BOTH be set to 2'
-         stop
+         go to 900
          endif
 
       if ((mthbc(3).eq.2 .and. mthbc(4).ne.2) .or.
      &    (mthbc(4).eq.2 .and. mthbc(3).ne.2)) then
          write(6,*) '*** ERROR ***  periodic boundary conditions'
          write(6,*) 'require mthbc(3) and mthbc(4) BOTH be set to 2'
-         stop
+         go to 900
          endif
 
       if ((mthbc(5).eq.2 .and. mthbc(6).ne.2) .or.
      &    (mthbc(6).eq.2 .and. mthbc(5).ne.2)) then
          write(6,*) '*** ERROR ***  periodic boundary conditions'
          write(6,*) 'require mthbc(5) and mthbc(6) BOTH be set to 2'
-         stop
+         go to 900
          endif
 
 c
@@ -280,7 +291,8 @@ c
          call claw3(meqn,mwaves,mbc,mx,my,mz,maux,
      &           q,aux,xlower,ylower,zlower,dx,dy,dz,tstart,tend,dtv,
      &           cflv,nv,method,mthlim,mthbc,
-     &           work,mwork,info,bc3,rpn3,rpt3,rptt3,src3,b4step3)
+     &           work,mwork,use_fwaves,info,bc3,rpn3,rpt3,rptt3,src3,
+     &           b4step3)
 c
 c        # check to see if an error occured:
          if (info .ne. 0) then

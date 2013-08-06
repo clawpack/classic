@@ -5,7 +5,7 @@
     subroutine step3ds(maxm,num_eqn,num_waves,num_ghost,mx,my, &
     mz,qold,qnew,aux,dx,dy,dz,dt,method,mthlim,cfl, &
     qadd,fadd,gadd,hadd,q1d,dtdx1d,dtdy1d,dtdz1d, &
-    aux1,aux2,aux3,num_aux,work,mwork,idir,rpn3,rpt3,rptt3)
+    aux1,aux2,aux3,num_aux,work,mwork,idir,use_fwave,rpn3,rpt3,rptt3)
 !     ==================================================================
 
 !     # Take one time step, updating q, to be used with
@@ -183,7 +183,7 @@
                 work(i0bpcmamdq),work(i0bpcmapdq), &
                 work(i0bmcpamdq),work(i0bmcpapdq), &
                 work(i0bpcpamdq),work(i0bpcpapdq), &
-                rpn3,rpt3,rptt3)
+                rpn3,rpt3,rptt3,use_fwave)
             
                 cfl = dmax1(cfl,cfl1d)
             
@@ -266,7 +266,7 @@
                 work(i0bpcmamdq),work(i0bpcmapdq), &
                 work(i0bmcpamdq),work(i0bmcpapdq), &
                 work(i0bpcpamdq),work(i0bpcpapdq), &
-                rpn3,rpt3,rptt3)
+                rpn3,rpt3,rptt3,use_fwave)
             
                 cfl = dmax1(cfl,cfl1d)
             
@@ -349,7 +349,7 @@
                 work(i0bpcmamdq),work(i0bpcmapdq), &
                 work(i0bmcpamdq),work(i0bmcpapdq), &
                 work(i0bpcpamdq),work(i0bpcpapdq), &
-                rpn3,rpt3,rptt3)
+                rpn3,rpt3,rptt3,use_fwave)
             
                 cfl = dmax1(cfl,cfl1d)
             
