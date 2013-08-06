@@ -5,7 +5,7 @@ c     ==============================================================
       subroutine claw2(meqn,mwaves,maux,mbc,mx,my,
      &           q,aux,xlower,ylower,dx,dy,tstart,tend,dtv,
      &           cflv,nv,method,mthlim,mthbc,
-     &           work,mwork,info,bc2,rpn2,rpt2,src2,b4step2)
+     &           work,mwork,use_fwaves,info,bc2,rpn2,rpt2,src2,b4step2)
 c     ==============================================================
 c
 c
@@ -488,6 +488,7 @@ c
       dimension  aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
       dimension work(mwork)
       dimension mthlim(mwaves),method(7),dtv(5),cflv(4),nv(2),mthbc(4)
+      logical :: use_fwaves
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 c
       maxm = max0(mx, my)
@@ -664,8 +665,7 @@ c
      &                  work(i0qadd),work(i0fadd),work(i0gadd),
      &                  work(i0q1d),work(i0dtdx1),work(i0dtdy1),
      &                  work(i0aux1),work(i0aux2),work(i0aux3),
-     &                  work(i0next),mwork1,.false.,rpn2,rpt2)
-             ! The .false. is for use_fwave
+     &                  work(i0next),mwork1,use_fwaves,rpn2,rpt2)
 c
          else
 c           # dimensional splitting (fractional steps)
@@ -676,7 +676,7 @@ c
      &                  work(i0qadd),work(i0fadd),work(i0gadd),
      &                  work(i0q1d),work(i0dtdx1),work(i0dtdy1),
      &                  work(i0aux1),work(i0aux2),work(i0aux3),
-     &                  work(i0next),mwork1,rpn2,rpt2)
+     &                  work(i0next),mwork1,use_fwaves,rpn2,rpt2)
 c
          endif
 c

@@ -4,7 +4,7 @@ c     ==========================================================
       subroutine dimsp2(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                  qold,qnew,aux,dx,dy,dt,method,mthlim,cfl,
      &                  cflv,qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &                  aux1,aux2,aux3,work,mwork,rpn2,rpt2)
+     &                  aux1,aux2,aux3,work,mwork,use_fwaves,rpn2,rpt2)
 c     ==========================================================
 c
 c     # Take one time step, updating q, using dimensional
@@ -42,6 +42,8 @@ c
       dimension method(7),mthlim(mwaves)
       dimension work(mwork)
 
+      logical :: use_fwaves
+
 c
 c     # If method(3) = -1, take a full time step in x.
 c     # If method(3) = -2, take a half time step in x.
@@ -52,13 +54,12 @@ c
           call step2ds(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                 qold,qnew,aux,dx,dy,dt2,method,mthlim,cflx,
      &                 qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &                 aux1,aux2,aux3,work,mwork,1,.false.,rpn2,rpt2)
-          ! The 1 means X-dir sweeps; the .false. is for using f-waves
+     &                 aux1,aux2,aux3,work,mwork,1,use_fwaves,rpn2,rpt2)
       else
           call step2ds(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                 qold,qnew,aux,dx,dy,dt,method,mthlim,cflx,
      &                 qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &                 aux1,aux2,aux3,work,mwork,1,.false.,rpn2,rpt2)
+     &                 aux1,aux2,aux3,work,mwork,1,use_fwaves,rpn2,rpt2)
       endif
 c
       if (cflx .gt. cflv(1)) then
@@ -72,7 +73,7 @@ c
       call step2ds(maxm,meqn,mwaves,maux,mbc,mx,my,
      &             qnew,qnew,aux,dx,dy,dt,method,mthlim,cfly,
      &             qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &             aux1,aux2,aux3,work,mwork,2,.false.,rpn2,rpt2)
+     &             aux1,aux2,aux3,work,mwork,2,use_fwaves,rpn2,rpt2)
 c
       cfl = dmax1(cflx,cfly)
 c
@@ -89,7 +90,7 @@ c           # Abort if the Courant number was too large in y-sweep
           call step2ds(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                 qnew,qnew,aux,dx,dy,dt2,method,mthlim,cflx,
      &                 qadd,fadd,gadd,q1d,dtdx1d,dtdy1d,
-     &                 aux1,aux2,aux3,work,mwork,1,.false.,rpn2,rpt2)
+     &                 aux1,aux2,aux3,work,mwork,1,use_fwaves,rpn2,rpt2)
           cfl = dmax1(cfl,cflx)
       endif
 c

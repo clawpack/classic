@@ -264,7 +264,7 @@ c
          call claw2(meqn,mwaves,maux,mbc,mx,my,
      &           q,aux,xlower,ylower,dx,dy,tstart,tend,dtv,
      &           cflv,nv,method,mthlim,mthbc,
-     &           work,mwork,info,bc2,rpn2,rpt2,src2,b4step2)
+     &           work,mwork,use_fwaves,info,bc2,rpn2,rpt2,src2,b4step2)
 c
 c        # check to see if an error occured:
          if (info .ne. 0) then
