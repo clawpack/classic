@@ -1,10 +1,10 @@
 # setrun file for 2D acoustics in a homogeneous domain
 
 def setrun(claw_pkg='classic'):
-    from clawpack.clawutil import data as clawdata
+    from clawpack.clawutil import data
 
     # 2D general data object
-    rundata = clawdata.ClawRunData(claw_pkg, 2)    # 2 = number of dimensions
+    rundata = data.ClawRunData(claw_pkg, 2)    # 2 = number of dimensions
 
     # Problem-specific data
     probdata = rundata.new_UserData(name='probdata', fname='setprob.data')
@@ -45,6 +45,8 @@ def setrun(claw_pkg='classic'):
     clawdata.transverse_waves = 2
     clawdata.verbosity = 1
     clawdata.source_split = 0
+    clawdata.dimensional_split = 0
+    clawdata.use_fwaves = False
 
     # Waves and limiter
     clawdata.num_waves = 2

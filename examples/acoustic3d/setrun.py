@@ -1,10 +1,10 @@
 # setrun file for 3D variable coefficient acoustics example
 
 def setrun(claw_pkg='classic'):
-    from clawpack.clawutil import data as clawdata
+    from clawpack.clawutil import data
 
     # General data object
-    rundata = clawdata.ClawRunData(claw_pkg, 3)    # 3 = number of dimensions
+    rundata = data.ClawRunData(claw_pkg, 3)    # 3 = number of dimensions
 
     # Problem-specific data
     probdata = rundata.new_UserData(name='probdata', fname='setprob.data')
