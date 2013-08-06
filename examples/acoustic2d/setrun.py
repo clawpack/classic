@@ -48,7 +48,7 @@ def setrun(claw_pkg='classic'):
 
     # Waves and limiter
     clawdata.num_waves = 2
-    clawdata.limiter = [0, 0]
+    clawdata.limiter = [3, 3]
 
     # Boundary conditions
     # Zero-order extrapolation everywhere

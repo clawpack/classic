@@ -31,6 +31,8 @@ subroutine limiter(maxm,num_eqn,num_waves,num_ghost,mx,wave,s,mthlim)
     real(kind=8), intent(in) :: s(num_waves, 1-num_ghost:maxm+num_ghost)
     integer, intent(in) :: mthlim(num_waves)
 
+    real(kind=8), external :: philim
+
     ! Local storage
     integer :: m, mw, i
     real(kind=8) :: r, c, wlimiter, wnorm2, dotl
