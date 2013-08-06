@@ -1,7 +1,7 @@
 # setrun file for 2D acoustics in a homogeneous domain
 
 def setrun(claw_pkg='classic'):
-    from clawpack.clawutil import clawdata
+    from clawpack.clawutil import data as clawdata
 
     # 2D general data object
     rundata = clawdata.ClawRunData(claw_pkg, 2)    # 2 = number of dimensions

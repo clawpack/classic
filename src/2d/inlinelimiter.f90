@@ -34,8 +34,8 @@ subroutine limiter(maxm,num_eqn,num_waves,num_ghost,mx,wave,s,mthlim)
 
     ! Local storage
     integer :: m, mw, i
-    real(kind=8) :: r, c, wlimiter
-    real(kind=8), dimension(num_waves) :: dotr, dotl, wnorm2
+    real(kind=8) :: r, c, wlimiter, wnorm2, dotl
+    real(kind=8), dimension(num_waves) :: dotr
 
     dotr = 0.d0
 
@@ -47,24 +47,24 @@ subroutine limiter(maxm,num_eqn,num_waves,num_ghost,mx,wave,s,mthlim)
             endif
 
             ! Construct dot products
-            wnorm2(mw) = 0.d0
-            dotl(mw) = dotr(mw)
+            wnorm2 = 0.d0
+            dotl = dotr(mw)
             dotr(mw) = 0.d0
             do m=1,num_eqn
-                wnorm2(mw) = wnorm2(mw) + wave(m,mw,i)**2
+                wnorm2 = wnorm2 + wave(m,mw,i)**2
                 dotr(mw) = dotr(mw) + wave(m,mw,i)*wave(m,mw,i+1)
             end do
 
             ! Skip this loop if it's on the boundary or the size of the wave is
             ! zero (but still want dot products to be initialized above)
             if (i == 0) cycle wave_loop
-            if (wnorm2(mw) == 0.d0) cycle wave_loop
+            if (wnorm2 == 0.d0) cycle wave_loop
         
             ! Compute ratio of this wave's strength to upwind wave's strength
             if (s(mw,i) > 0.d0) then
-                r = dotl(mw) / wnorm2(mw)
+                r = dotl / wnorm2
             else
-                r = dotr(mw) / wnorm2(mw)
+                r = dotr(mw) / wnorm2
             endif
 
             ! Compute value of limiter function

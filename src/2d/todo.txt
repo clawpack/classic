@@ -25,7 +25,8 @@ Test --> done!
 
 Reorder loops --> done
 
-Test dimensional splitting
+Test dimensional splitting --> done
+Rename clawdata -> data in examples --> done
 
 Thread new-style aux output argument down to out2
 Thread use_fwave stuff down from claw2ez
