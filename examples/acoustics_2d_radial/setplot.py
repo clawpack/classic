@@ -80,7 +80,7 @@ def setplot(plotdata):
     plotitem.plot_var = 0
     plotitem.plotstyle = 'o'
     plotitem.color = 'b'
-    plotitem.show = True       # show on plot?
+    plotitem.show = (qref_dir is not None)       # show on plot?
     
     # Set up for item on these axes: 1d reference solution
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')

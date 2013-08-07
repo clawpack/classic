@@ -11,7 +11,7 @@ SOURCES = \
   setprob.f \
   $(CLAW)/riemann/src/rpn2_acoustics.f90 \
   $(CLAW)/riemann/src/rpt2_acoustics.f90 \
-  $(CLAW)/classic/src/2d/setaux.f90 \
+  $(CLAW)/classic/src/2d/setaux.f \
   $(CLAW)/classic/src/2d/driver.f90 \
   $(CLAW)/classic/src/2d/claw2ez.f \
   $(CLAW)/classic/src/2d/claw2.f \
