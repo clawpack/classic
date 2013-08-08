@@ -3,6 +3,7 @@ python:
   - 2.7
 env:
   - BUILD_TYPE="Release"
+  
 before_install:
   - sudo apt-get update
   - sudo apt-get install gfortran
@@ -11,16 +12,18 @@ before_install:
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - python setup.py git-dev
+  # Next command should be removed once clawpack/clawpack setup.py git-dev creates the sym-links
+  # needed for the python path
+  - python setup.py install
   - rm -rf classic
   - ln -s ../ classic
+  
 install:
-  - pwd
-  - ls
-  - ls clawpack
   - export PYTHONPATH=${PWD}:$PYTHONPATH
   - export CLAW=${PWD}
   - export FC=gfortran
   - cd classic
+  
 before_script:
   # Print CPU info for debugging purposes:
   - cat /proc/cpuinfo
@@ -29,10 +32,10 @@ before_script:
   - echo "PYTHONPATH="$PYTHONPATH
   - echo "CLAW="$CLAW
   - echo "FC="$FC
+  
 script:
-  - printenv CLAW
-  - printenv PYTHONPATH
   - cd tests/acoustics3d/
   - make .output
+  
 notifications:
   email: false
