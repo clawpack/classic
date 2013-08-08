@@ -19,13 +19,14 @@ before_script:
   - gfortran -v
   - /usr/bin/f95 -v
 install:
-  - pwd
-  - ls
-  - python setup.py install
+  - export PYTHONPATH=${PWD}:$PYTHONPATH
   - export CLAW=${PWD}
   - cd classic
 script:
+  - pwd
+  - ls
   - printenv CLAW
+  - printenv PYTHONPATH
   - cd tests/acoustics3d/
   - make .output
 notifications:
