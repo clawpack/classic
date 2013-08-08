@@ -72,7 +72,7 @@ subroutine limiter(maxm,num_eqn,num_waves,num_ghost,mx,wave,s,mthlim)
                 
                 ! Minmod
                 case(1)
-                    wlimiter = max(0.d0, min(1.0, r))
+                    wlimiter = max(0.d0, min(1.d0, r))
 
                 ! Superbee
                 case(2)
