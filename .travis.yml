@@ -15,6 +15,7 @@ before_script:
   - gfortran -v
   - /usr/bin/f95 -v
 install:
+  - pwd
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - python setup.py git-dev
 script:
