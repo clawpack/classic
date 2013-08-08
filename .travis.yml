@@ -16,11 +16,13 @@ before_script:
   - /usr/bin/f95 -v
 install:
   - pwd
-  - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
+  - git clone --branch=master --depth=100 git://github.com/clawpack/clawutil
+  - git clone --branch=master --depth=100 git://github.com/clawpack/riemann
   - ls
-  - python setup.py git-dev
+  - export CLAW=./
+  - cd classic
 script:
-  - cd classic/tests/acoustics3d/
+  - cd tests/acoustics3d/
   - make .output
 notifications:
   email: false
