@@ -8,6 +8,7 @@ before_install:
   - sudo apt-get install gfortran
   # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print numpy.__version__"
+  - cd ..
 before_script:
   # Print CPU info for debugging purposes:
   - cat /proc/cpuinfo
