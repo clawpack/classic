@@ -4,7 +4,8 @@ c     ==================================================================
       subroutine claw3(meqn,mwaves,mbc,mx,my,mz,maux,
      &           q,aux,xlower,ylower,zlower,dx,dy,dz,tstart,tend,dtv,
      &           cflv,nv,method,mthlim,mthbc,
-     &           work,mwork,info,bc3,rpn3,rpt3,rptt3,src3,b4step3)
+     &           work,mwork,use_fwave,info,bc3,rpn3,rpt3,rptt3,src3,
+     &           b4step3)
 c     ==================================================================
 c
 c  Solves a hyperbolic system of conservation laws in three space
@@ -648,7 +649,7 @@ c        # fixed size time steps.  Compute the number of steps:
 c             # single step mode
               maxn = 1
            else
-              maxn = (tend - tstart + 1d-10) / dt
+              maxn = nint((tend - tstart)/dt)    ! Round to nearest int
               if (dabs(maxn*dt - (tend-tstart)) .gt.
      &                          1d-5*(tend-tstart)) then
 c                # dt doesn't divide time interval integer number of times
@@ -799,7 +800,7 @@ c
      &                 work(i0hadd),work(i0q1d),work(i0dtdx1d),
      &                 work(i0dtdy1d),work(i0dtdz1d),
      &                 work(i0aux1),work(i0aux2),work(i0aux3),maux,
-     &                 work(i0next),mwork1,rpn3,rpt3, rptt3)
+     &                 work(i0next),mwork1,use_fwave,rpn3,rpt3, rptt3)
 c
          else
 c           # dimensional splitting (fractional steps)
@@ -811,7 +812,7 @@ c
      &                  work(i0hadd),work(i0q1d),work(i0dtdx1d),
      &                  work(i0dtdy1d),work(i0dtdz1d),
      &                  work(i0aux1),work(i0aux2),work(i0aux3),maux,
-     &                  work(i0next),mwork1,rpn3,rpt3,rptt3)
+     &                  work(i0next),mwork1,use_fwave,rpn3,rpt3,rptt3)
 c
          endif
 c

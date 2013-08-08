@@ -34,42 +34,45 @@ subroutine limiter(maxm,num_eqn,num_waves,num_ghost,mx,wave,s,mthlim)
 
     ! Local storage
     integer :: m, mw, i
-    real(kind=8) :: dotr, dotl, wnorm2, r, c, wlimiter
+    real(kind=8) :: r, c, wlimiter, wnorm2, dotl
+    real(kind=8), dimension(num_waves) :: dotr
 
-    wave_loop: do mw=1,num_waves
-        if (mthlim(mw) == 0) then
-            cycle wave_loop
-        endif
+    dotr = 0.d0
 
-        dotr = 0.d0
-        x_loop: do i = 0, mx+1
+    x_loop: do i = 0, mx+1
 
-            ! Construct limiting quantity
+        wave_loop: do mw=1,num_waves
+            if (mthlim(mw) == 0) then
+                cycle wave_loop
+            endif
+
+            ! Construct dot products
             wnorm2 = 0.d0
-            dotl = dotr
-            dotr = 0.d0
+            dotl = dotr(mw)
+            dotr(mw) = 0.d0
             do m=1,num_eqn
                 wnorm2 = wnorm2 + wave(m,mw,i)**2
-                dotr = dotr + wave(m,mw,i)*wave(m,mw,i+1)
+                dotr(mw) = dotr(mw) + wave(m,mw,i)*wave(m,mw,i+1)
             end do
 
             ! Skip this loop if it's on the boundary or the size of the wave is
-            ! zero
-            if (i == 0) cycle x_loop
-            if (wnorm2 == 0.d0) cycle x_loop
+            ! zero (but still want dot products to be initialized above)
+            if (i == 0) cycle wave_loop
+            if (wnorm2 == 0.d0) cycle wave_loop
         
-            ! Apply wave depending on sign of wave speed
+            ! Compute ratio of this wave's strength to upwind wave's strength
             if (s(mw,i) > 0.d0) then
-                r = wnorm2 / dotl
+                r = dotl / wnorm2
             else
-                r = wnorm2 / dotr
+                r = dotr(mw) / wnorm2
             endif
 
+            ! Compute value of limiter function
             select case(mthlim(mw))
                 
                 ! Minmod
                 case(1)
-                    wlimiter = max(0.d0, min(1.0, r))
+                    wlimiter = max(0.d0, min(1.d0, r))
 
                 ! Superbee
                 case(2)
@@ -96,7 +99,7 @@ subroutine limiter(maxm,num_eqn,num_waves,num_ghost,mx,wave,s,mthlim)
             ! Apply resulting limit
             wave(:,mw,i) = wlimiter * wave(:,mw,i)
         
-        end do x_loop
-    end do wave_loop
+        end do wave_loop
+    end do x_loop
 
 end subroutine limiter
