@@ -8,6 +8,11 @@ before_install:
   - sudo apt-get install gfortran
   # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print numpy.__version__"
+  - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
+  - cd clawpack
+  - python setup.py git-dev
+  - rm -rf classic
+  - ln -s ../ classic
   - cd ..
 before_script:
   # Print CPU info for debugging purposes:
@@ -15,11 +20,11 @@ before_script:
   - gfortran -v
   - /usr/bin/f95 -v
 install:
-  - git clone --branch=master --depth=100 git://github.com/clawpack/clawutil
-  - git clone --branch=master --depth=100 git://github.com/clawpack/riemann
+  - python setup.py install
   - export CLAW=${PWD}
   - cd classic
 script:
+  - printenv CLAW
   - cd tests/acoustics3d/
   - make .output
 notifications:
