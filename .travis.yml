@@ -13,7 +13,6 @@ before_install:
   - python setup.py git-dev
   - rm -rf classic
   - ln -s ../ classic
-  - cd ..
 before_script:
   # Print CPU info for debugging purposes:
   - cat /proc/cpuinfo
