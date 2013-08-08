@@ -13,15 +13,19 @@ before_install:
   - python setup.py git-dev
   - rm -rf classic
   - ln -s ../ classic
+install:
+  - export PYTHONPATH=${PWD}:$PYTHONPATH
+  - export CLAW=${PWD}
+  - export FC=gfortran
+  - cd classic
 before_script:
   # Print CPU info for debugging purposes:
   - cat /proc/cpuinfo
   - gfortran -v
   - /usr/bin/f95 -v
-install:
-  - export PYTHONPATH=${PWD}:$PYTHONPATH
-  - export CLAW=${PWD}
-  - cd classic
+  - echo "PYTHONPATH="$PYTHONPATH
+  - echo "CLAW="$CLAW
+  - echo "FC="$FC
 script:
   - pwd
   - ls
