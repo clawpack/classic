@@ -17,6 +17,7 @@ before_script:
 install:
   - pwd
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
+  - ls
   - python setup.py git-dev
 script:
   - cd classic/tests/acoustics3d/
