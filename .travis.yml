@@ -6,15 +6,12 @@ env:
   
 before_install:
   - sudo apt-get update
-  - sudo apt-get install gfortran liblapack-pic
+  - sudo apt-get install gfortran
   # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print numpy.__version__"
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - python setup.py git-dev
-  # Next command should be removed once clawpack/clawpack setup.py git-dev creates the sym-links
-  # needed for the python path
-  - python setup.py install
   - rm -rf classic
   - ln -s ../ classic
   
