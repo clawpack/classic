@@ -6,4 +6,8 @@ xclaw
 .output
 _output/*
 _output
+_plots/*
+_plots
 *.data
+*.pyc
+.plots
