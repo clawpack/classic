@@ -47,7 +47,7 @@ c
       
       dimension   q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
       dimension aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-      logical outaux
+      logical, intent(in) :: outaux
       character*10 fname1, fname2, fname3
       logical do_ascii
             

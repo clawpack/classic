@@ -21,7 +21,7 @@ c
      &               1-mbc:mz+mbc)
       dimension  aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc,
      &               1-mbc:mz+mbc)
-      logical outaux
+      logical, intent(in) :: outaux
       character*10 fname1, fname2, fname3
 
 c

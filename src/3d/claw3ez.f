@@ -32,7 +32,7 @@ c
 c
       integer, dimension(:), allocatable :: mthlim
 
-      logical :: outaux_once, output_t0, use_fwaves
+      logical :: outaux_init, output_t0, use_fwaves
       logical :: outaux_always
       integer :: output_format, dimensional_split, outstyle
       integer, dimension(:), allocatable :: iout_q, iout_aux
@@ -82,7 +82,7 @@ c     # Read the input in standard form from claw2ez.data:
       read(55,*) output_format    ! Not used yet
       ! These iout variables are not currently used, but hang onto them
       ! anyway in case somebody wants to use them at a future date.  The
-      ! same goes for outaux_once.
+      ! same goes for outaux_init.
       allocate(iout_q(meqn), stat=allocate_status)
       if (allocate_status .ne. 0) then
          print *, '*** Error allocating iout_q array; exiting claw3ez'
@@ -99,10 +99,11 @@ c     # Read the input in standard form from claw2ez.data:
          read(55,*) (iout_aux(i), i = 1, maux)
          ! Not implementing selective output of aux fields yet
          outaux_always = any(iout_aux .ne. 0)
-         read(55,*) outaux_once
+         read(55,*) outaux_init
+         outaux_init = outaux_init .or. outaux_always
       else
          outaux_always = .false.
-         outaux_once = .false.    ! Just for the sake of initialization
+         outaux_init = .false.    ! Just for the sake of initialization
       end if
 
       read(55,*) dtv(1)     ! Initial dt
@@ -268,7 +269,7 @@ c
 c        # output initial data
          call out3(meqn,mbc,mx,my,mz,xlower,ylower,
      &          zlower,dx,dy,dz,q,t0,iframe,aux,maux,
-     &          outaux_once .or. outaux_always)
+     &          outaux_init)
          write(6,601) iframe, t0
          endif
 
