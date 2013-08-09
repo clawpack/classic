@@ -3,7 +3,7 @@ c
 c =========================================================
       subroutine out3(meqn,mbc,mx,my,mz,
      &                 xlower,ylower,zlower,dx,dy,dz,q,t,iframe,
-     &                 aux,maux)
+     &                 aux,maux,outaux)
 c =========================================================
 c
 c     # Output the results for a general system of conservation laws
@@ -21,10 +21,9 @@ c
      &               1-mbc:mz+mbc)
       dimension  aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc,
      &               1-mbc:mz+mbc)
-      character*10 fname1, fname2, fname3
       logical outaux
+      character*10 fname1, fname2, fname3
 
-      outaux = .false.
 c
 c
 c     # first create the file name and open file

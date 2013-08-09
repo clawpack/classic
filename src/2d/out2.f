@@ -2,7 +2,7 @@ c
 c
 c =========================================================
       subroutine out2(meqn,mbc,mx,my,xlower,ylower,
-     &                 dx,dy,q,t,iframe,aux,maux)
+     &                 dx,dy,q,t,iframe,aux,maux,outaux)
 c =========================================================
 c
 c     # Output the results for a general system of conservation laws
@@ -19,10 +19,10 @@ c
       implicit double precision (a-h,o-z)
       dimension   q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
       dimension aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-      character*10 fname1, fname2, fname3
       logical outaux
 
-      outaux = .false.
+      character*10 fname1, fname2, fname3
+
 c
 c     # first create the file name and open file
 c

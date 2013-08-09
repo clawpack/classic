@@ -22,6 +22,7 @@ c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(4)
       integer :: allocate_status, dimensional_split, outstyle
       logical :: rest, outaux_once, use_fwaves, output_t0
+      logical :: outaux_always
       character*12 fname
 c
       common /restrt_block/ tinitial, iframe
@@ -91,8 +92,11 @@ c
             go to 900
          end if
          read(55,*) (iout_aux(i), i = 1, maux)
+         ! Not implementing selective output of aux fields yet
+         outaux_always = any(iout_aux .ne. 0)
          read(55,*) outaux_once
       else
+         outaux_always = .false.
          outaux_once = .false.    ! Just to initialize
       end if
 
@@ -237,7 +241,8 @@ c
       if (.not. rest) then
 c        # output initial data
          call out2(meqn,mbc,mx,my,xlower,ylower,dx,dy,
-     &          q,t0,iframe,aux,maux)
+     &          q,t0,iframe,aux,maux,
+     &          outaux_once .or. outaux_always)
          write(6,601) iframe, t0
          endif
 
@@ -289,7 +294,7 @@ c        # iframe is the frame number used to form file names in out1
          iframe = n/nstepout
          if (iframe*nstepout .eq. n) then
             call out2(meqn,mbc,mx,my,xlower,ylower,dx,dy,
-     &             q,tend,iframe,aux,maux)
+     &             q,tend,iframe,aux,maux,outaux_always)
             write(6,601) iframe,tend
             write(10,1010) tend,info,dtv(3),dtv(4),dtv(5),
      &           cflv(3),cflv(4),nv(2)

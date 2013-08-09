@@ -33,6 +33,7 @@ c
       integer, dimension(:), allocatable :: mthlim
 
       logical :: outaux_once, output_t0, use_fwaves
+      logical :: outaux_always
       integer :: output_format, dimensional_split, outstyle
       integer, dimension(:), allocatable :: iout_q, iout_aux
       integer :: allocate_status
@@ -96,8 +97,11 @@ c     # Read the input in standard form from claw2ez.data:
             go to 900
          end if
          read(55,*) (iout_aux(i), i = 1, maux)
+         ! Not implementing selective output of aux fields yet
+         outaux_always = any(iout_aux .ne. 0)
          read(55,*) outaux_once
       else
+         outaux_always = .false.
          outaux_once = .false.    ! Just for the sake of initialization
       end if
 
@@ -263,7 +267,8 @@ c
       if (.not. rest) then
 c        # output initial data
          call out3(meqn,mbc,mx,my,mz,xlower,ylower,
-     &          zlower,dx,dy,dz,q,t0,iframe,aux,maux)
+     &          zlower,dx,dy,dz,q,t0,iframe,aux,maux,
+     &          outaux_once .or. outaux_always)
          write(6,601) iframe, t0
          endif
 
@@ -317,7 +322,8 @@ c        # iframe is the frame number used to form file names in out3
          if (mod(n,nstepout) .eq. 0) then
             iframe = iframe + 1
             call out3(meqn,mbc,mx,my,mz,xlower,ylower,
-     &            zlower,dx,dy,dz,q,tend,iframe,aux,maux)
+     &            zlower,dx,dy,dz,q,tend,iframe,aux,maux,
+     &            outaux_always)
             write(6,601) iframe,tend
             write(10,1010) tend,info,dtv(3),dtv(4),dtv(5),
      &           cflv(3),cflv(4),nv(2)
