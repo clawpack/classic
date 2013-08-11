@@ -23,7 +23,7 @@ def setrun(claw_pkg='classic'):
     clawdata.upper = [ 1.,  1.,  1.]
 
     # Dimensions of grid
-    clawdata.num_cells = [20, 20, 20]
+    clawdata.num_cells = [50, 50, 50]
 
     # Size of system
     clawdata.num_eqn = 4
