@@ -32,7 +32,8 @@ c
 c
       integer, dimension(:), allocatable :: mthlim
 
-      logical :: outaux_once, output_t0, use_fwaves
+      logical :: outaux_init_only, output_t0, use_fwaves
+      logical :: outaux_always
       integer :: output_format, dimensional_split, outstyle
       integer, dimension(:), allocatable :: iout_q, iout_aux
       integer :: allocate_status
@@ -81,7 +82,7 @@ c     # Read the input in standard form from claw2ez.data:
       read(55,*) output_format    ! Not used yet
       ! These iout variables are not currently used, but hang onto them
       ! anyway in case somebody wants to use them at a future date.  The
-      ! same goes for outaux_once.
+      ! same goes for outaux_init_only.
       allocate(iout_q(meqn), stat=allocate_status)
       if (allocate_status .ne. 0) then
          print *, '*** Error allocating iout_q array; exiting claw3ez'
@@ -96,9 +97,17 @@ c     # Read the input in standard form from claw2ez.data:
             go to 900
          end if
          read(55,*) (iout_aux(i), i = 1, maux)
-         read(55,*) outaux_once
+         read(55,*) outaux_init_only
+         ! Not implementing selective output of aux fields yet
+         if (any(iout_aux .ne. 0)) then
+            outaux_always = .not. outaux_init_only
+         else
+            outaux_always = .false.
+            outaux_init_only = .false.
+         end if
       else
-         outaux_once = .false.    ! Just for the sake of initialization
+         outaux_always = .false.
+         outaux_init_only = .false.    ! Just for the sake of initialization
       end if
 
       read(55,*) dtv(1)     ! Initial dt
@@ -263,7 +272,8 @@ c
       if (.not. rest) then
 c        # output initial data
          call out3(meqn,mbc,mx,my,mz,xlower,ylower,
-     &          zlower,dx,dy,dz,q,t0,iframe,aux,maux)
+     &          zlower,dx,dy,dz,q,t0,iframe,aux,maux,
+     &          outaux_init_only .or. outaux_always)
          write(6,601) iframe, t0
          endif
 
@@ -317,7 +327,8 @@ c        # iframe is the frame number used to form file names in out3
          if (mod(n,nstepout) .eq. 0) then
             iframe = iframe + 1
             call out3(meqn,mbc,mx,my,mz,xlower,ylower,
-     &            zlower,dx,dy,dz,q,tend,iframe,aux,maux)
+     &            zlower,dx,dy,dz,q,tend,iframe,aux,maux,
+     &            outaux_always)
             write(6,601) iframe,tend
             write(10,1010) tend,info,dtv(3),dtv(4),dtv(5),
      &           cflv(3),cflv(4),nv(2)
