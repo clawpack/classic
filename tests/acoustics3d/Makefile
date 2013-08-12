@@ -23,6 +23,7 @@ SOURCES = \
   $(CLAW)/classic/src/3d/claw3.f \
   $(CLAW)/classic/src/3d/step3.f90 \
   $(CLAW)/classic/src/3d/step3ds.f90 \
+  $(CLAW)/classic/src/3d/dimsp3.f \
   $(CLAW)/classic/src/3d/flux3.f90 \
   $(CLAW)/classic/src/3d/copyq3.f \
   $(CLAW)/classic/src/3d/limiter.f90 \

@@ -805,7 +805,7 @@ c
          else
 c           # dimensional splitting (fractional steps)
 c
-            call step3ds(maxm,meqn,mwaves,mbc,mx,my,
+            call dimsp3(maxm,meqn,mwaves,mbc,mx,my,
      &                  mz,work(i0qwrk1),q,aux,dx,dy,dz,dt,method,
      &                  mthlim,cfl,cflv,
      &                  work(i0qadd),work(i0fadd),work(i0gadd),
