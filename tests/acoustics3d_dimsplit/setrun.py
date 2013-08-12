@@ -47,6 +47,7 @@ def setrun(claw_pkg='classic'):
     clawdata.transverse_waves = 22
     clawdata.verbosity = 1
     clawdata.source_split = 0
+    clawdata.dimensional_split = 1
 
     # Waves and limiting
     clawdata.num_waves = 2
