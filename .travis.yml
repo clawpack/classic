@@ -31,7 +31,9 @@ before_script:
   - echo "FC="$FC
   
 script:
-  - cd tests/acoustics3d/
+  - cd $CLAW/classic/tests/acoustics3d/
+  - make .output
+  - cd $CLAW/classic/tests/acoustics3d_dimsplit/
   - make .output
   
 notifications:

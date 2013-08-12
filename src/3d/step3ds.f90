@@ -105,8 +105,8 @@
     iused      = i0bpcpapdq + (maxm+2*num_ghost)*num_eqn - 1
 
     if (iused > mwork) then
-    !        # This shouldn't happen due to checks in claw2
-        write(6,*) '*** not enough work space in step2'
+    !        # This shouldn't happen due to checks in claw3
+        write(6,*) '*** not enough work space in step3ds'
         write(6,*) '*** iused = ', iused, '   mwork =',mwork
         stop
     endif
