@@ -6,7 +6,7 @@ that will be read in by the Fortran code.
     
 """ 
 
-import clawpack.clawutil.clawdata
+import clawpack.clawutil.data
 
 
 #------------------------------
