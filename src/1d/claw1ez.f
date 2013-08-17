@@ -207,7 +207,8 @@ c
       call qinit(meqn,mbc,mx,xlower,dx,q,maux,aux)
 c
 c        # output initial data
-      call out1(meqn,mbc,mx,xlower,dx,q,t0,0,aux,maux)
+      call out1(meqn,mbc,mx,xlower,dx,q,t0,0,aux,maux,
+     &          outaux_init_only .or. outaux_always)
 
       ! Allocate work array
       allocate(work(mwork), stat=allocate_status)
@@ -275,7 +276,7 @@ c        # iframe is the frame number used to form file names in out1
          iframe = n/nstepout
 	 if (iframe*nstepout .eq. n) then
             call out1(meqn,mbc,mx,xlower,dx,q,tend,iframe,
-     &                aux,maux)
+     &                aux,maux,outaux_always)
             write(6,601) iframe,tend
             write(10,1010) tend,info,dtv(3),dtv(4),dtv(5),
      &           cflv(3),cflv(4),nv(2)

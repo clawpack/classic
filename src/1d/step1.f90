@@ -93,53 +93,63 @@
           
 !     print *,"q before, from fortran",q(24,1)
 
-    forall(i=1:mx+1, m=1:num_eqn)
-    q(m,i) = q(m,i) - dtdx(i)*apdq(m,i)
-    q(m,i-1) = q(m,i-1) - dtdx(i-1)*amdq(m,i)
-    end forall
+    do i = 1, mx+1
+        ! q(:,i-1) is still in cache from last cycle of i loop, so
+        ! update it first
+        do m = 1, num_eqn
+            q(m,i-1) = q(m,i-1) - dtdx(i-1)*amdq(m,i)
+        end do
+        do m = 1, num_eqn
+            q(m,i) = q(m,i) - dtdx(i)*apdq(m,i)
+        end do
+    end do
 
 
 !     # compute maximum wave speed:
     cfl = 0.d0
-    do 50 mw=1,num_waves
-        do 45 i=1,mx+1
+    do i=1,mx+1
+        do mw=1,num_waves
         !          # if s>0 use dtdx(i) to compute CFL,
         !          # if s<0 use dtdx(i-1) to compute CFL:
             cfl = dmax1(cfl, dtdx(i)*s(mw,i), -dtdx(i-1)*s(mw,i))
-        45 END DO
-    50 END DO
+        end do
+    end do
 
     if (method(2) == 1) go to 900
 
 !     # compute correction fluxes for second order q_{xx} terms:
 !     ----------------------------------------------------------
 
-    forall(i=1-num_ghost:mx+num_ghost, m=1:num_eqn)
-    f(m,i) = 0.d0
-    end forall
-
 !      # apply limiter to waves:
     if (limit) call limiter(mx,num_eqn,num_waves,num_ghost,mx, &
     wave,s,mthlim)
 
     if (use_fwave.eqv. .FALSE. ) then
-        do 120 i=1,mx+1
-            do 120 m=1,num_eqn
-                do 110 mw=1,num_waves
-                    dtdxave = 0.5d0 * (dtdx(i-1) + dtdx(i))
+        do i=1,mx+1
+            do m = 1,num_eqn
+                f(m,i) = 0.d0
+            end do
+            dtdxave = 0.5d0 * (dtdx(i-1) + dtdx(i))
+            do mw=1,num_waves
+                do m=1,num_eqn
                     f(m,i) = f(m,i) + 0.5d0 * dabs(s(mw,i)) &
                     * (1.d0 - dabs(s(mw,i))*dtdxave) * wave(m,mw,i)
-                110 END DO
-        120 END DO
+                end do
+            end do
+        end do
     else
-        do 121 i=1,mx+1
-            do 121 m=1,num_eqn
-                do 111 mw=1,num_waves
-                    dtdxave = 0.5d0 * (dtdx(i-1) + dtdx(i))
+        do i=1,mx+1
+            do m = 1,num_eqn
+                f(m,i) = 0.d0
+            end do
+            dtdxave = 0.5d0 * (dtdx(i-1) + dtdx(i))
+            do mw=1,num_waves
+                do m=1,num_eqn
                     f(m,i) = f(m,i) + 0.5d0 * dsign(1.d0,s(mw,i)) &
                     * (1.d0 - dabs(s(mw,i))*dtdxave) * wave(m,mw,i)
-                111 END DO
-        121 END DO
+                end do
+            end do
+        end do
     endif
 
 
@@ -149,9 +159,11 @@
 
 !     # (Note:  Godunov update has already been performed above)
 
-    forall(i=1:mx+1, m=1:num_eqn)
-    q(m,i) = q(m,i) - dtdx(i) * (f(m,i+1) - f(m,i))
-    end forall
+    do i = 1, mx+1
+        do m = 1, num_eqn
+            q(m,i) = q(m,i) - dtdx(i) * (f(m,i+1) - f(m,i))
+        end do
+    end do
 
     900 continue
     return

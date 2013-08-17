@@ -1,7 +1,7 @@
 c
 c
 c =========================================================
-      subroutine out1(meqn,mbc,mx,xlower,dx,q,t,iframe,aux,maux)
+      subroutine out1(meqn,mbc,mx,xlower,dx,q,t,iframe,aux,maux,outaux)
 c =========================================================
 c
 c     # Output the results for a general system of conservation laws
@@ -21,7 +21,6 @@ c
       character*10 fname1, fname2, fname3
       logical outaux
 
-      outaux = .false.
 c
 c     # Write the results to the file fort.q<iframe>
 c     # Use format required by matlab script  plotclaw1.m
