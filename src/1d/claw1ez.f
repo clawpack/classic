@@ -2,8 +2,7 @@ c
 c
 c
 c     ===============================================================
-      subroutine claw1ez(maxmx,meqn,mwaves,mbc,maux,mwork,mthlim,
-     &                   q,work,aux)
+      subroutine claw1ez    ! No arguments
 c     ===============================================================
 c
 c     An easy-to-use clawpack driver routine for simple applications
@@ -16,14 +15,15 @@ c
       implicit double precision (a-h,o-z)
       external bc1,rp1,src1,b4step1
 
-      dimension    q(1-mbc:maxmx+mbc, meqn)
-      dimension  aux(1-mbc:maxmx+mbc, maux)
-      dimension work(mwork)
-      dimension mthlim(mwaves)
+      double precision, dimension(:,:), allocatable :: q, aux
+      double precision, dimension(:), allocatable :: work, tout
+      integer, dimension(:), allocatable :: mthlim, iout_q, iout_aux
+
 c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(2)
-      dimension tout(100)
-      logical outt0
+      integer :: allocate_status, outstyle
+      logical :: outaux_init_only, use_fwaves, output_t0
+      logical :: outaux_always
       character*12 fname
 c
       open(10,file='fort.info',status='unknown',form='formatted')
@@ -37,107 +37,122 @@ c     ## New in 4.4:   Input file name changed from claw1ez.data
 c     ## Open file and skip over leading lines with # comments:
       fname = 'claw.data'
       call opendatafile(55,fname)
+
 c
-c     Number of space dimensions:  ## New in 4.4
+c     # Read the input in standard form from claw.data:
+c
+
       read(55,*) ndim
-c
-c     ## The remainder is unchanged from 4.3:
 
-c     Number of grid cells:
-      read(55,*) mx
-
-c     i/o variables
-      read(55,*) nout
-      read(55,*) outstyle
-      if (outstyle.eq.1) then
-          read(55,*) tfinal
-          nstepout = 1
-        elseif (outstyle.eq.2) then
-          read(55,*) (tout(i), i=1,nout)
-          nstepout = 1
-        elseif (outstyle.eq.3) then
-          read(55,*) nstepout, nstop
-	  nout = nstop
-        endif
-
-
-c     timestepping variables
-      read(55,*) dtv(1)
-      read(55,*) dtv(2)
-      read(55,*) cflv(1)
-      read(55,*) cflv(2)
-      read(55,*) nv(1)
-c
-
-c     # input parameters for clawpack routines
-      read(55,*) method(1)
-      read(55,*) method(2)
-      read(55,*) method(3)
-      read(55,*) method(4)
-      read(55,*) method(5)
-      read(55,*) method(6)  
-      read(55,*) method(7) 
-
-      read(55,*) meqn1
-      read(55,*) mwaves1
-      read(55,*) (mthlim(mw), mw=1,mwaves1)
-
-c     # physical domain:
-      read(55,*) t0
       read(55,*) xlower
       read(55,*) xupper
-c
-c     # boundary conditions:
-      read(55,*) mbc1
+      read(55,*) mx
+      read(55,*) meqn
+      read(55,*) mwaves
+      read(55,*) maux
+      read(55,*) t0
+
+      read(55,*) outstyle
+      if (outstyle == 1) then
+         read(55,*) nout
+         read(55,*) tfinal
+         read(55,*) output_t0    ! Not currently used
+         nstepout = 1
+      else if (outstyle == 2) then
+         read(55,*) nout
+         allocate(tout(nout), stat=allocate_status)
+         if (allocate_status .ne. 0) then
+            print *, '*** Error allocating tout array; exiting claw1ez'
+            go to 900
+         end if
+         read(55,*) (tout(i), i=1,nout)
+         nstepout = 1
+      else if (outstyle == 3) then
+         read(55,*) nstepout
+         read(55,*) nstop
+         read(55,*) output_t0
+         nout = nstop
+      else
+         print *, '*** Unrecognized output style ', outstyle
+         print *, '*** Exiting claw1ez'
+         go to 900
+      end if
+
+      read(55,*) output_format    ! Not used yet
+      ! These iout variables are not currently used, but hang onto them
+      ! anyway in case somebody wants to use them at a future date.  The
+      ! same goes for outaux_init_only.
+      allocate(iout_q(meqn), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating iout_q array; exiting claw1ez'
+         go to 900    ! Exception handling, old school style
+      end if
+      read(55,*) (iout_q(i), i = 1, meqn)
+      if (maux > 0) then
+         allocate(iout_aux(maux), stat=allocate_status)
+         if (allocate_status .ne. 0) then
+            print *, '*** Error allocating iout_aux array;',
+     &               ' exiting claw1ez'
+            go to 900
+         end if
+         read(55,*) (iout_aux(i), i = 1, maux)
+         read(55,*) outaux_init_only
+         ! Not implementing selective output of aux fields yet
+         if (any(iout_aux .ne. 0)) then
+            outaux_always = .not. outaux_init_only
+         else
+            outaux_always = .false.
+            outaux_init_only = .false.
+         end if
+      else
+         outaux_always = .false.
+         outaux_init_only = .false.    ! Just to initialize
+      end if
+
+      read(55,*) dtv(1)     ! Initial dt
+      read(55,*) dtv(2)     ! Max dt
+      read(55,*) cflv(1)    ! Max CFL number
+      read(55,*) cflv(2)    ! Desired CFL number
+      read(55,*) nv(1)      ! Maximum number of steps
+
+      read(55,*) method(1)    ! Variable or fixed dt
+      read(55,*) method(2)    ! Order
+      ! method(3) (transverse order) not used in 1D
+      ! No dimensional splitting in 1D
+      read(55,*) method(4)    ! Verbosity
+      read(55,*) method(5)    ! Source term splitting style
+      read(55,*) method(6)    ! Index into aux of capacity function
+      method(7) = maux        ! Number of aux variables
+
+      read(55,*) use_fwaves
+
+      allocate(mthlim(mwaves), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating mthlim array; exiting claw1ez'
+         go to 900
+      end if
+      read(55,*) (mthlim(i), i = 1, mwaves)
+
+      read(55,*) mbc
       read(55,*) mthbc(1)
       read(55,*) mthbc(2)
 
-      if (method(7) .ne. maux) then
-         write(6,*) '*** ERROR ***  maux set wrong in input or driver'
-         stop
-         endif
+      ! No restart in 1D, and there's nothing after the restart info, so
+      ! just close the file now.
+      close(unit=55)
 
-      if (meqn1 .ne. meqn) then
-         write(6,*) '*** ERROR ***  meqn set wrong in input or driver'
-         stop
-         endif
-      if (mwaves1 .ne. mwaves) then
-         write(6,*) '*** ERROR ***  mwaves set wrong in input or driver'
-         stop
-         endif
-      if (mbc1 .ne. mbc) then
-         write(6,*) '*** ERROR ***  mbc set wrong in input or driver'
-         stop
-         endif
-c
+
+      ! Check consistency for periodic BCs
       if ((mthbc(1).eq.2 .and. mthbc(2).ne.2) .or.
      &    (mthbc(2).eq.2 .and. mthbc(1).ne.2)) then
          write(6,*) '*** ERROR ***  periodic boundary conditions'
          write(6,*) ' require mthbc(1) and mthbc(2) BOTH be set to 2'
          stop 
-         endif
+      endif
 
-c
-c     # check that enough storage has been allocated:
-c
 
-      mwork1 = (maxmx + 2*mbc) * (2 + 4*meqn + mwaves + meqn*mwaves)
-c
-      if (mx.gt.maxmx .or. mwork.lt.mwork1) then
-c        # insufficient storage
-         maxmx1 = max0(mx,maxmx)
-
-         mwork1 = (maxmx1 + 2*mbc) * (2 + 4*meqn + mwaves + meqn*mwaves)
-
-         write(6,*) ' '
-         write(6,*) '*** ERROR *** Insufficient storage allocated'
-         write(6,*) 'Recompile after increasing values in driver.f:'
-         write(6,611) maxmx1
-         write(6,613) mwork1
- 611     format(/,'parameter (maxmx = ',i5,')')
- 613     format('parameter (mwork = ',i7,')',/)
-         stop
-         endif
+      ! Figure out size of work array needed
+      mwork = (mx + 2*mbc) * (2 + 4*meqn + mwaves + meqn*mwaves)
 
 c
 c
@@ -158,39 +173,63 @@ c     # call user's routine setprob to set any specific parameters
 c     # or other initialization required.
 c
       call setprob
+
+      ! Allocate aux
+      if (maux > 0) then
+         allocate(aux(maux, 1-mbc:mx+mbc), stat=allocate_status)
+      else
+         ! Allocate dummy array to prevent segfaults if it's
+         ! dereferenced.  May be unnecessary.
+         allocate(aux(1,1), stat=allocate_status)
+      end if
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating aux array; exiting claw1ez'
+         go to 900
+      end if
+
 c        
 c     # set aux array:
 c
       if (maux .gt. 0)  then
-         call setaux(maxmx,mbc,mx,xlower,dx,maux,aux)
-         endif
+         call setaux(mbc,mx,xlower,dx,maux,aux)
+      endif
+
+      ! Allocate q
+      allocate(q(meqn, 1-mbc:mx+mbc), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating q array; exiting claw1ez'
+         go to 900
+      end if
+
 c
 c     # set initial conditions:
 c
-      call qinit(maxmx,meqn,mbc,mx,xlower,dx,q,maux,aux)
+      call qinit(meqn,mbc,mx,xlower,dx,q,maux,aux)
 c
-      outt0 = .true.
-      if (outt0) then
 c        # output initial data
-         call out1(maxmx,meqn,mbc,mx,xlower,dx,q,t0,0,aux,maux)
-         write(6,601) 0, t0
-         endif
+      call out1(meqn,mbc,mx,xlower,dx,q,t0,0,aux,maux)
 
+      ! Allocate work array
+      allocate(work(mwork), stat=allocate_status)
+      if (allocate_status .ne. 0) then
+         print *, '*** Error allocating work array; exiting claw1ez'
+         go to 900
+      end if
 c
 c     ----------
 c     Main loop:
 c     ----------
 c
       tend = t0
-      do 100 n=1,nout
+      do n=1,nout
          tstart = tend
          if (outstyle .eq. 1)  tend = tstart + dtout
          if (outstyle .eq. 2)  tend = tout(n)
          if (outstyle .eq. 3)  tend = tstart - 1.d0  !# single-step mode
 c
-         call claw1(maxmx,meqn,mwaves,mbc,mx,
+         call claw1(meqn,mwaves,mbc,mx,
      &           q,aux,xlower,dx,tstart,tend,dtv,cflv,nv,method,mthlim,
-     &           mthbc,work,mwork,info,bc1,rp1,src1,b4step1)
+     &           mthbc,work,mwork,use_fwaves,info,bc1,rp1,src1,b4step1)
 c
 c        # check to see if an error occured:
          if (info .ne. 0) then
@@ -217,7 +256,7 @@ c        # check to see if an error occured:
                write(6,*) '***   and dt is fixed since method(1)=0'
                endif
 
-            go to 999
+            go to 900
             endif
 c
          dtv(1) = dtv(5)  !# use final dt as starting value on next call
@@ -235,7 +274,7 @@ c        # time steps since the last output.
 c        # iframe is the frame number used to form file names in out1
          iframe = n/nstepout
 	 if (iframe*nstepout .eq. n) then
-            call out1(maxmx,meqn,mbc,mx,xlower,dx,q,tend,iframe,
+            call out1(meqn,mbc,mx,xlower,dx,q,tend,iframe,
      &                aux,maux)
             write(6,601) iframe,tend
             write(10,1010) tend,info,dtv(3),dtv(4),dtv(5),
@@ -253,9 +292,18 @@ c
      &       d15.4,/,'last dt =',d15.4,/,'largest cfl =',
      &         d15.4,/,'last cfl =',d15.4,/,'steps taken =',i4,/)
 c
-  100    continue
+      end do
 c
-  999 continue
+  900 continue
+      if (allocated(q))        deallocate(q)
+      if (allocated(aux))      deallocate(aux)
+      if (allocated(work))     deallocate(work)
+      if (allocated(mthlim))   deallocate(mthlim)
+      if (allocated(tout))     deallocate(tout)
+      if (allocated(iout_q))   deallocate(iout_q)
+      if (allocated(iout_aux)) deallocate(iout_aux)
+
 c
       return 
       end
+

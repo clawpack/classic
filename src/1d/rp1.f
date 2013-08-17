@@ -1,7 +1,7 @@
 c
 c
 c =========================================================
-      subroutine rp1(maxmx,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,
+      subroutine rp1(meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,
      &           wave,s,amdq,apdq)
 c =========================================================
 c
@@ -23,12 +23,14 @@ c     # From the basic clawpack routine step1, rp is called with ql = qr = q.
 c
 c
       implicit double precision (a-h,o-z)
-      dimension   ql(1-mbc:maxmx+mbc, meqn)
-      dimension   qr(1-mbc:maxmx+mbc, meqn)
-      dimension    s(1-mbc:maxmx+mbc, mwaves)
-      dimension wave(1-mbc:maxmx+mbc, meqn, mwaves)
-      dimension amdq(1-mbc:maxmx+mbc, meqn)
-      dimension apdq(1-mbc:maxmx+mbc, meqn)
+      dimension   ql(meqn,1-mbc:mx+mbc)
+      dimension   qr(meqn,1-mbc:mx+mbc)
+      dimension    s(mwaves,1-mbc:mx+mbc)
+      dimension wave(meqn,mwaves,1-mbc:mx+mbc)
+      dimension amdq(meqn,1-mbc:mx+mbc)
+      dimension apdq(meqn,1-mbc:mx+mbc)
+      dimension auxl(maux,1-mbc:mx+mbc)
+      dimension auxr(maux,1-mbc:mx+mbc)
 c
 c
       write(6,*) 'You must provide a valid Riemann solver'
@@ -36,3 +38,4 @@ c
 c
       return
       end
+

@@ -1,7 +1,7 @@
 c
 c
 c =========================================================
-      subroutine out1(maxmx,meqn,mbc,mx,xlower,dx,q,t,iframe,aux,maux)
+      subroutine out1(meqn,mbc,mx,xlower,dx,q,t,iframe,aux,maux)
 c =========================================================
 c
 c     # Output the results for a general system of conservation laws
@@ -16,8 +16,8 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
 c
 c
       implicit double precision (a-h,o-z)
-      dimension q(1-mbc:maxmx+mbc, meqn)
-      dimension aux(1-mbc:maxmx+mbc, maux)
+      dimension q(meqn,1-mbc:mx+mbc)
+      dimension aux(maux,1-mbc:mx+mbc)
       character*10 fname1, fname2, fname3
       logical outaux
 
@@ -65,10 +65,10 @@ c
           do m=1,meqn
 c            # exponents with more than 2 digits cause problems reading
 c            # into matlab... reset tiny values to zero:
-             if (dabs(q(i,m)) .lt. 1d-99) q(i,m) = 0.d0
+             if (dabs(q(m,i)) .lt. 1d-99) q(m,i) = 0.d0
              enddo
 c
-          write(50,1005) (q(i,m), m=1,meqn)
+          write(50,1005) (q(m,i), m=1,meqn)
  1005     format(4e16.8)
 c
  10       continue
@@ -86,10 +86,10 @@ c        # also output the aux arrays:
             do m=1,maux
 c              # exponents with more than 2 digits cause problems reading
 c              # into matlab... reset tiny values to zero:
-               if (dabs(aux(i,m)) .lt. 1d-99) aux(i,m) = 0.d0
+               if (dabs(aux(m,i)) .lt. 1d-99) aux(m,i) = 0.d0
             enddo
 c
-            write(70,1005) (aux(i,m), m=1,maux)
+            write(70,1005) (aux(m,i), m=1,maux)
 c
   110       continue
          write(70,*) ' '
@@ -110,3 +110,4 @@ c
 
       return
       end
+

@@ -1,8 +1,8 @@
 c
 c     ==============================================================
-      subroutine claw1(maxmx,meqn,mwaves,mbc,mx,
+      subroutine claw1(meqn,mwaves,mbc,mx,
      &           q,aux,xlower,dx,tstart,tend,dtv,cflv,nv,method,mthlim,
-     &           mthbc,work,mwork,info,bc1,rp1,src1,b4step1)
+     &           mthbc,work,mwork,use_fwave,info,bc1,rp1,src1,b4step1)
 c     ==============================================================
 c
 c  Solves a hyperbolic system of conservation laws in one space dimension
@@ -53,9 +53,6 @@ c  Description of parameters...
 c  ----------------------------
 c
 c
-c    maxmx is the maximum number of interior grid points in x, 
-c          and is used in declarations of the array q.
-c
 c    meqn is the number of equations in the system of
 c         conservation laws.
 c
@@ -77,9 +74,8 @@ c    mx is the number of grid cells in the x-direction, in the
 c       physical domain.  In addition there are mbc grid cells
 c       along each edge of the grid that are used for boundary
 c       conditions.
-c       Must have mx .le. maxmx
 c 
-c    q(1-mbc:maxmx+mbc, meqn) 
+c    q(1-mbc:mx+mbc, meqn) 
 c        On input:  initial data at time tstart.
 c        On output: final solution at time tend.
 c        q(i,m) = value of mth component in the i'th cell.
@@ -88,7 +84,7 @@ c                for i = 1,2,...,mx
 c        mbc extra cells on each end are needed for boundary conditions
 c        as specified in the routine bc1.
 c
-c    aux(1-mbc:maxmx+mbc, maux)
+c    aux(1-mbc:mx+mbc, maux)
 c        Array of auxiliary variables that are used in specifying the problem.
 c        If method(7) = 0 then there are no auxiliary variables and aux
 c                         can be a dummy variable.
@@ -223,14 +219,14 @@ c
 c    work(mwork) = double precision work array of length at least mwork
 c
 c    mwork = length of work array.  Must be at least
-c               (maxmx + 2*mbc) * (2 + 4*meqn + mwaves + meqn*mwaves)
+c               (mx + 2*mbc) * (2 + 4*meqn + mwaves + meqn*mwaves)
 c            If mwork is too small then the program returns with info = 4
 c            and prints the necessary value of mwork to unit 6.
 c
 c            
 c    info = output value yielding error information:
 c         = 0 if normal return.
-c         = 1 if mx.gt.maxmx   or  mbc.lt.2
+c         = 1 if mbc.lt.2
 c         = 2 if method(1)=0 and dt doesn't divide (tend - tstart).
 c         = 3 if method(1)=1 and cflv(2) > cflv(1).
 c         = 4 if mwork is too small.
@@ -251,10 +247,10 @@ c         1:mx to the mbc ghost cells along each edge of the domain.
 c
 c          The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine bc1(maxmx,meqn,mbc,mx,xlower,dx,q,maux,aux,t,mthbc)
+c     subroutine bc1(meqn,mbc,mx,xlower,dx,q,maux,aux,t,mthbc)
 c     implicit double precision (a-h,o-z)
-c     dimension   q(1-mbc:maxmx+mbc, meqn)
-c     dimension aux(1-mbc:maxmx+mbc, *)
+c     dimension   q(1-mbc:mx+mbc, meqn)
+c     dimension aux(1-mbc:mx+mbc, *)
 c     dimension mthbc(2)
 c  -------------------------------------------------
 c
@@ -266,16 +262,16 @@ c    rp1 = user-supplied subroutine that implements the Riemann solver
 c
 c          The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine rp1(maxmx,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,wave,s,amdq,apdq)
+c     subroutine rp1(meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,wave,s,amdq,apdq)
 c     implicit double precision (a-h,o-z)
-c     dimension   ql(1-mbc:maxmx+mbc, meqn)
-c     dimension   qr(1-mbc:maxmx+mbc, meqn)
-c     dimension auxl(1-mbc:maxmx+mbc, *)
-c     dimension auxr(1-mbc:maxmx+mbc, *)
-c     dimension wave(1-mbc:maxmx+mbc, meqn, mwaves)
-c     dimension    s(1-mbc:maxmx+mbc, mwaves)
-c     dimension amdq(1-mbc:maxmx+mbc, meqn)
-c     dimension apdq(1-mbc:maxmx+mbc, meqn)
+c     dimension   ql(1-mbc:mx+mbc, meqn)
+c     dimension   qr(1-mbc:mx+mbc, meqn)
+c     dimension auxl(1-mbc:mx+mbc, *)
+c     dimension auxr(1-mbc:mx+mbc, *)
+c     dimension wave(1-mbc:mx+mbc, meqn, mwaves)
+c     dimension    s(1-mbc:mx+mbc, mwaves)
+c     dimension amdq(1-mbc:mx+mbc, meqn)
+c     dimension apdq(1-mbc:mx+mbc, meqn)
 c  -------------------------------------------------
 c
 c         On input, ql contains the state vector at the left edge of each cell
@@ -322,10 +318,10 @@ c           claw/clawpack/1d/lib/src1.f)
 c
 c          The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine src1(maxmx,meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt)
+c     subroutine src1(mx,meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt)
 c     implicit double precision (a-h,o-z)
-c     dimension   q(1-mbc:maxmx+mbc, meqn)
-c     dimension aux(1-mbc:maxmx+mbc, *)
+c     dimension   q(1-mbc:mx+mbc, meqn)
+c     dimension aux(1-mbc:mx+mbc, *)
 c  -------------------------------------------------
 c      If method(7)=0  or the auxiliary variables are not needed in this solver,
 c      then the latter dimension statement can be omitted, but aux should
@@ -344,10 +340,10 @@ c
 c          The form of this subroutine is
 c      
 c  -------------------------------------------------
-c      subroutine b4step1(maxmx,mbc,mx,meqn,q,xlower,dx,time,dt,maux,aux)
+c      subroutine b4step1(mx,mbc,mx,meqn,q,xlower,dx,time,dt,maux,aux)
 c      implicit double precision (a-h,o-z)
-c      dimension   q(1-mbc:maxmx+mbc, meqn)
-c      dimension aux(1-mbc:maxmx+mbc, *)
+c      dimension   q(1-mbc:mx+mbc, meqn)
+c      dimension aux(1-mbc:mx+mbc, *)
 c  -------------------------------------------------
 c
 c
@@ -388,8 +384,8 @@ c    ======================================================================
 c 
       implicit double precision (a-h,o-z)
       external bc1,rp1,src1,b4step1
-      dimension q(1-mbc:maxmx+mbc, meqn)
-      dimension aux(1-mbc:maxmx+mbc, *)
+      dimension q(meqn,1-mbc:mx+mbc)
+      dimension aux(maux,1-mbc:mx+mbc)
       dimension work(mwork)
       dimension mthlim(mwaves),method(7),dtv(5),cflv(4),nv(2)
       dimension mthbc(2)
@@ -408,10 +404,6 @@ c
 c
 c     # check for errors in data:
 c
-      if (mx .gt. maxmx) then
-         info = 1
-         go to 900
-         endif
 c
       if (method(1) .eq. 0) then
 c        # fixed size time steps.  Compute the number of steps:
@@ -436,14 +428,14 @@ c
 c
 c     # partition work array into pieces for passing into step1:
       i0f = 1
-      i0wave = i0f + (maxmx + 2*mbc) * meqn
-      i0s = i0wave + (maxmx + 2*mbc) * meqn * mwaves
-      i0dtdx = i0s + (maxmx + 2*mbc) * mwaves
-      i0qwork = i0dtdx + (maxmx + 2*mbc) 
-      i0amdq = i0qwork + (maxmx + 2*mbc) * meqn
-      i0apdq = i0amdq + (maxmx + 2*mbc) * meqn
-      i0dtdx = i0apdq + (maxmx + 2*mbc) * meqn
-      i0end = i0dtdx + (maxmx + 2*mbc) - 1
+      i0wave = i0f + (mx + 2*mbc) * meqn
+      i0s = i0wave + (mx + 2*mbc) * meqn * mwaves
+      i0dtdx = i0s + (mx + 2*mbc) * mwaves
+      i0qwork = i0dtdx + (mx + 2*mbc) 
+      i0amdq = i0qwork + (mx + 2*mbc) * meqn
+      i0apdq = i0amdq + (mx + 2*mbc) * meqn
+      i0dtdx = i0apdq + (mx + 2*mbc) * meqn
+      i0end = i0dtdx + (mx + 2*mbc) - 1
 c
       if (mwork .lt. i0end) then
          write(6,*) 'mwork must be increased to ',i0end
@@ -465,7 +457,7 @@ c        #  (unless tend < tstart, which is a flag to take only a single step)
 
          if (method(1).eq.1) then
 c           # save old q in case we need to retake step with smaller dt:
-            call copyq1(maxmx,meqn,mbc,mx,q,work(i0qwork))
+            call copyq1(meqn,mbc,mx,q,work(i0qwork))
             endif
 c           
    40    continue
@@ -484,37 +476,37 @@ c        # main steps in algorithm:
 c        ------------------------------------------------------------------
 c
 c        # extend data from grid to bordering boundary cells:
-         call bc1(maxmx,meqn,mbc,mx,xlower,dx,q,maux,aux,told,dt,mthbc)
+         call bc1(meqn,mbc,mx,xlower,dx,q,maux,aux,told,dt,mthbc)
 c
 c
 c        # call user-supplied routine which might set aux arrays
 c        # for this time step, for example.
 
-         call b4step1(maxmx,mbc,mx,meqn,q,
+         call b4step1(mbc,mx,meqn,q,
      &                xlower,dx,told,dt,maux,aux)
 c
 c
          if (method(5).eq.2) then
 c            # with Strang splitting for source term:
-             call src1(maxmx,meqn,mbc,mx,xlower,dx,q,maux,aux,told,dt2)
+             call src1(meqn,mbc,mx,xlower,dx,q,maux,aux,told,dt2)
              endif
 c
 c        # take a step on the homogeneous conservation law:
-         call step1(maxmx,meqn,mwaves,mbc,mx,q,aux,dx,dt,
+         call step1(meqn,mwaves,mbc,mx,q,aux,dx,dt,
      &             method,mthlim,cfl,work(i0f),work(i0wave),
      &             work(i0s),work(i0amdq),work(i0apdq),work(i0dtdx),
-     &             rp1)
+     &             use_fwave,rp1)
 c
          if (method(5).eq.2) then
 c            # source terms over a second half time step for Strang splitting:
 c            # Note it is not so clear what time t should be used here if
 c            # the source terms are time-dependent!
-             call src1(maxmx,meqn,mbc,mx,xlower,dx,q,maux,aux,thalf,dt2)
+             call src1(meqn,mbc,mx,xlower,dx,q,maux,aux,thalf,dt2)
              endif
 
          if (method(5).eq.1) then
 c            # source terms over a full time step:
-             call src1(maxmx,meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt)
+             call src1(meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt)
              endif
 c
 
@@ -545,7 +537,7 @@ c               # accept this step
               else
 c               # reject this step
                 t = told
-                call copyq1(maxmx,meqn,mbc,mx,work(i0qwork),q)
+                call copyq1(meqn,mbc,mx,work(i0qwork),q)
 c
                 if (method(4) .eq. 1) then
                    write(6,602) 
@@ -589,3 +581,4 @@ c         # Courant number too large with fixed dt
        dtv(5) = dt
        return 
        end
+

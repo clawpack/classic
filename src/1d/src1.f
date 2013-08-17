@@ -2,12 +2,14 @@
 c
 c
 c =========================================================
-      subroutine src1(maxmx,meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt)
+      subroutine src1(meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt)
 c =========================================================
       implicit double precision (a-h,o-z)
-      dimension q(1-mbc:maxmx+mbc, meqn)
+      dimension q(meqn,1-mbc:mx+mbc)
+      dimension aux(maux,1-mbc:mx+mbc)
 c
 c     do nothing... no source term
 c
       return
       end
+

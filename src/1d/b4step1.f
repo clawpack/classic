@@ -1,5 +1,5 @@
 c     ============================================
-      subroutine b4step1(maxmx,mbc,mx,meqn,q,
+      subroutine b4step1(mbc,mx,meqn,q,
      &            xlower,dx,t,dt,maux,aux)
 c     ============================================
 c
@@ -11,8 +11,8 @@ c     # dummy routine
 c
 c     
       implicit double precision (a-h,o-z)
-      dimension q(1-mbc:maxmx+mbc, meqn)
-      dimension aux(1-mbc:maxmx+mbc, *)
+      dimension q(meqn, 1-mbc:mx+mbc)
+      dimension aux(maux, 1-mbc:mx+mbc)
 c
       return
       end
