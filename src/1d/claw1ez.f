@@ -228,7 +228,7 @@ c
          if (outstyle .eq. 2)  tend = tout(n)
          if (outstyle .eq. 3)  tend = tstart - 1.d0  !# single-step mode
 c
-         call claw1(meqn,mwaves,mbc,mx,
+         call claw1(meqn,mwaves,maux,mbc,mx,
      &           q,aux,xlower,dx,tstart,tend,dtv,cflv,nv,method,mthlim,
      &           mthbc,work,mwork,use_fwaves,info,bc1,rp1,src1,b4step1)
 c

@@ -1,13 +1,19 @@
       subroutine setprob
-      implicit double precision (a-h,o-z)
+
+      implicit none
+
       common /cqinit/ beta,ic
-      common /comaux/ rhol,cl,rhor,cr
+      integer ic
+      double precision beta
+
+      common /comaux/ Zl, cl, Zr, cr
+      double precision rhol, Zl, cl, rhor, Zr, cr
 c
 c     # Set the material parameters for the acoustic equations
 c
       character*25 fname
 
-      fname = setprob.data
+      fname = 'setprob.data'
       call opendatafile(7, fname)
 
 c     # choice of initial data:
@@ -19,8 +25,11 @@ c     # Piecewise constant medium with single interface at x=0
 c     # Density and sound speed to left and right:
       read(7,*) rhol
       read(7,*) cl
+      Zl = rhol*cl
+
       read(7,*) rhor
       read(7,*) cr
+      Zr = rhor*cr
 
       return
       end

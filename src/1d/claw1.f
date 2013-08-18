@@ -1,6 +1,6 @@
 c
 c     ==============================================================
-      subroutine claw1(meqn,mwaves,mbc,mx,
+      subroutine claw1(meqn,mwaves,maux,mbc,mx,
      &           q,aux,xlower,dx,tstart,tend,dtv,cflv,nv,method,mthlim,
      &           mthbc,work,mwork,use_fwave,info,bc1,rp1,src1,b4step1)
 c     ==============================================================
@@ -400,7 +400,6 @@ c
       dtmin = dt
       dtmax = dt
       nv(2) = 0
-      maux = method(7)
 c
 c     # check for errors in data:
 c
@@ -409,16 +408,16 @@ c
 c        # fixed size time steps.  Compute the number of steps:
          if (tend .lt. tstart) then
 c             # single step mode
-	      maxn = 1
+              maxn = 1
            else
-              maxn = (tend - tstart + 1d-10) / dt
+              maxn = nint((tend - tstart)/dt)    ! Round to nearest int
               if (dabs(maxn*dt - (tend-tstart)) .gt.
      &                          1d-5*(tend-tstart)) then
 c                # dt doesn't divide time interval integer number of times
                  info = 2
                  go to 900
                  endif
-	   endif
+           endif
          endif
 c
       if (method(1).eq.1 .and. cflv(2).gt.cflv(1)) then
@@ -492,7 +491,7 @@ c            # with Strang splitting for source term:
              endif
 c
 c        # take a step on the homogeneous conservation law:
-         call step1(meqn,mwaves,mbc,mx,q,aux,dx,dt,
+         call step1(meqn,mwaves,mbc,maux,mx,q,aux,dx,dt,
      &             method,mthlim,cfl,work(i0f),work(i0wave),
      &             work(i0s),work(i0amdq),work(i0apdq),work(i0dtdx),
      &             use_fwave,rp1)

@@ -13,6 +13,7 @@ c
       implicit double precision (a-h,o-z)
       dimension q(meqn, 1-mbc:mx+mbc)
       dimension aux(maux, 1-mbc:mx+mbc)
+
 c
       return
       end
