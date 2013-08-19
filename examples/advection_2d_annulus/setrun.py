@@ -44,7 +44,7 @@ def setrun(claw_pkg='classic'):
     clawdata.cfl_desired = 0.9
     clawdata.cfl_max = 1.
     clawdata.steps_max = 1000
-    clawdata.dt_variable = 1
+    clawdata.dt_variable = True
 
     # Details of the numerical method
     clawdata.order = 2
