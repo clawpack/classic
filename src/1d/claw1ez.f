@@ -23,7 +23,7 @@ c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(2)
       integer :: allocate_status, outstyle
       logical :: outaux_init_only, use_fwaves, output_t0
-      logical :: outaux_always
+      logical :: outaux_always, dt_variable
       character*12 fname
 c
       open(10,file='fort.info',status='unknown',form='formatted')
@@ -115,7 +115,8 @@ c
       read(55,*) cflv(2)    ! Desired CFL number
       read(55,*) nv(1)      ! Maximum number of steps
 
-      read(55,*) method(1)    ! Variable or fixed dt
+      read(55,*) dt_variable    ! Variable or fixed dt
+      method(1) = (dt_variable .eqv. .true.)
       read(55,*) method(2)    ! Order
       ! method(3) (transverse order) not used in 1D
       ! No dimensional splitting in 1D
