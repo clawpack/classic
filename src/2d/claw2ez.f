@@ -22,7 +22,7 @@ c
       dimension method(7),dtv(5),cflv(4),nv(2),mthbc(4)
       integer :: allocate_status, dimensional_split, outstyle
       logical :: rest, outaux_init_only, use_fwaves, output_t0
-      logical :: outaux_always
+      logical :: outaux_always, dt_variable
       character*12 fname
 c
       common /restrt_block/ tinitial, iframe
@@ -111,7 +111,8 @@ c
       read(55,*) cflv(2)    ! Desired CFL number
       read(55,*) nv(1)      ! Maximum number of steps
 
-      read(55,*) method(1)    ! Variable or fixed dt
+      read(55,*) dt_variable    ! Variable or fixed dt
+      method(1) = (dt_variable .eqv. .true.)
       read(55,*) method(2)    ! Order
       read(55,*) method(3)    ! Transverse propagation style
       read(55,*) dimensional_split    ! Whether to use dimensional splitting
