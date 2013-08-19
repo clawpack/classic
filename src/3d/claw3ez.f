@@ -33,7 +33,7 @@ c
       integer, dimension(:), allocatable :: mthlim
 
       logical :: outaux_init_only, output_t0, use_fwaves
-      logical :: outaux_always
+      logical :: outaux_always, dt_variable
       integer :: output_format, dimensional_split, outstyle
       integer, dimension(:), allocatable :: iout_q, iout_aux
       integer :: allocate_status
@@ -116,7 +116,12 @@ c     # Read the input in standard form from claw2ez.data:
       read(55,*) cflv(2)    ! Desired CFL number
       read(55,*) nv(1)      ! Maximum number of steps
 
-      read(55,*) method(1)    ! Variable or fixed dt
+      read(55,*) dt_variable  ! Variable or fixed dt
+      if (dt_variable) then
+         method(1) = 1
+      else
+         method(1) = 0
+      end if
       read(55,*) method(2)    ! Order
       read(55,*) method(3)    ! Transverse propagation style
       read(55,*) dimensional_split    ! Whether to use dimensional splitting
