@@ -75,16 +75,16 @@ c       physical domain.  In addition there are mbc grid cells
 c       along each edge of the grid that are used for boundary
 c       conditions.
 c 
-c    q(1-mbc:mx+mbc, meqn) 
+c    q(meqn, 1-mbc:mx+mbc) 
 c        On input:  initial data at time tstart.
 c        On output: final solution at time tend.
-c        q(i,m) = value of mth component in the i'th cell.
-c        Values within the physical domain are in q(i,m) 
+c        q(m,i) = value of mth component in the i'th cell.
+c        Values within the physical domain are in q(m,i) 
 c                for i = 1,2,...,mx
 c        mbc extra cells on each end are needed for boundary conditions
 c        as specified in the routine bc1.
 c
-c    aux(1-mbc:mx+mbc, maux)
+c    aux(maux, 1-mbc:mx+mbc)
 c        Array of auxiliary variables that are used in specifying the problem.
 c        If method(7) = 0 then there are no auxiliary variables and aux
 c                         can be a dummy variable.
@@ -99,7 +99,7 @@ c
 c        If method(6) = 0 then there is no capacity function.
 c        If method(6) = mcapa > 0  then there is a capacity function and
 c            capa(i), the "capacity" of the i'th cell, is assumed to be
-c            stored in aux(i,mcapa).
+c            stored in aux(mcapa,i).
 c            In this case we require method(7).ge.mcapa.
 c
 c    dx = grid spacing in x.  
@@ -247,10 +247,10 @@ c         1:mx to the mbc ghost cells along each edge of the domain.
 c
 c          The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine bc1(meqn,mbc,mx,xlower,dx,q,maux,aux,t,mthbc)
+c     subroutine bc1(meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt,mthbc)
 c     implicit double precision (a-h,o-z)
-c     dimension   q(1-mbc:mx+mbc, meqn)
-c     dimension aux(1-mbc:mx+mbc, *)
+c     dimension   q(meqn, 1-mbc:mx+mbc)
+c     dimension aux(maux, 1-mbc:mx+mbc)
 c     dimension mthbc(2)
 c  -------------------------------------------------
 c
@@ -262,16 +262,16 @@ c    rp1 = user-supplied subroutine that implements the Riemann solver
 c
 c          The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine rp1(meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,wave,s,amdq,apdq)
+c     subroutine rp1(meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,wave,s,amdq,apdq,maux)
 c     implicit double precision (a-h,o-z)
-c     dimension   ql(1-mbc:mx+mbc, meqn)
-c     dimension   qr(1-mbc:mx+mbc, meqn)
-c     dimension auxl(1-mbc:mx+mbc, *)
-c     dimension auxr(1-mbc:mx+mbc, *)
-c     dimension wave(1-mbc:mx+mbc, meqn, mwaves)
-c     dimension    s(1-mbc:mx+mbc, mwaves)
-c     dimension amdq(1-mbc:mx+mbc, meqn)
-c     dimension apdq(1-mbc:mx+mbc, meqn)
+c     dimension   ql(meqn, 1-mbc:mx+mbc)
+c     dimension   qr(meqn, 1-mbc:mx+mbc)
+c     dimension auxl(maux, 1-mbc:mx+mbc)
+c     dimension auxr(maux, 1-mbc:mx+mbc)
+c     dimension wave(meqn, mwaves, 1-mbc:mx+mbc)
+c     dimension    s(mwaves, 1-mbc:mx+mbc)
+c     dimension amdq(meqn, 1-mbc:mx+mbc)
+c     dimension apdq(meqn, 1-mbc:mx+mbc)
 c  -------------------------------------------------
 c
 c         On input, ql contains the state vector at the left edge of each cell
@@ -279,8 +279,8 @@ c                   qr contains the state vector at the right edge of each cell
 c                 auxl contains auxiliary values at the left edge of each cell
 c                 auxr contains auxiliary values at the right edge of each cell
 c
-c         Note that the i'th Riemann problem has left state qr(i-1,:)
-c                                            and right state ql(i,:)
+c         Note that the i'th Riemann problem has left state qr(:,i-1)
+c                                            and right state ql(:,i)
 c         In the standard clawpack routines, this Riemann solver is
 c         called with ql=qr=q along this slice.  More flexibility is allowed
 c         in case the user wishes to implement another solution method
@@ -291,12 +291,12 @@ c         are passed in using auxl and auxr.  Again, in the standard routines
 c         auxl=auxr=aux in the call to rp1.
 c
 c          On output, 
-c              wave(i,m,mw) is the m'th component of the jump across
+c              wave(m,mw,i) is the m'th component of the jump across
 c                              wave number mw in the ith Riemann problem.
-c              s(i,mw) is the wave speed of wave number mw in the
+c              s(mw,i) is the wave speed of wave number mw in the
 c                              ith Riemann problem.
-c              amdq(i,m) = m'th component of A^- Delta q,
-c              apdq(i,m) = m'th component of A^+ Delta q,
+c              amdq(m,i) = m'th component of A^- Delta q,
+c              apdq(m,i) = m'th component of A^+ Delta q,
 c                     the decomposition of the flux difference
 c                         f(qr(i-1)) - f(ql(i))
 c                     into leftgoing and rightgoing parts respectively.
@@ -318,18 +318,18 @@ c           claw/clawpack/1d/lib/src1.f)
 c
 c          The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine src1(mx,meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt)
+c     subroutine src1(meqn,mbc,mx,xlower,dx,q,maux,aux,t,dt)
 c     implicit double precision (a-h,o-z)
-c     dimension   q(1-mbc:mx+mbc, meqn)
-c     dimension aux(1-mbc:mx+mbc, *)
+c     dimension   q(meqn, 1-mbc:mx+mbc)
+c     dimension aux(maux, 1-mbc:mx+mbc)
 c  -------------------------------------------------
 c      If method(7)=0  or the auxiliary variables are not needed in this solver,
 c      then the latter dimension statement can be omitted, but aux should
 c      still appear in the argument list.
 c
-c      On input, q(i,m) contains the data for solving the
+c      On input, q(m,i) contains the data for solving the
 c                source term equation.
-c      On output, q(i,m) should have been replaced by the solution to
+c      On output, q(m,i) should have been replaced by the solution to
 c                 the source term equation after a step of length dt.
 c
 c
@@ -340,10 +340,10 @@ c
 c          The form of this subroutine is
 c      
 c  -------------------------------------------------
-c      subroutine b4step1(mx,mbc,mx,meqn,q,xlower,dx,time,dt,maux,aux)
+c      subroutine b4step1(mbc,mx,meqn,q,xlower,dx,time,dt,maux,aux)
 c      implicit double precision (a-h,o-z)
-c      dimension   q(1-mbc:mx+mbc, meqn)
-c      dimension aux(1-mbc:mx+mbc, *)
+c      dimension   q(meqn, 1-mbc:mx+mbc)
+c      dimension aux(maux, 1-mbc:mx+mbc)
 c  -------------------------------------------------
 c
 c

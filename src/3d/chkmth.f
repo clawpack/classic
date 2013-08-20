@@ -8,7 +8,7 @@ c     # Note that method(3) < 0 yields dimensional splitting.
 c
       implicit double precision (a-h,o-z)
 c
-      dimension method(*)
+      dimension method(7)
 c
       info = 0
 c

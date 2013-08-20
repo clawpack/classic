@@ -9,13 +9,12 @@ c     An easy-to-use clawpack driver routine for simple applications
 c     Documentation is available at
 c                 http://www.amath.washington.edu/~claw/doc.html
 c
-c     Author: Randall J. LeVeque
-c     Version of August, 2002 --  CLAWPACK Version 4.1
+c     Author: Randall J. LeVeque, Grady I. Lemoine
 c
-c     Modified July 2013 by Grady Lemoine to use dynamic allocation, new
-c     input file format.  Allocation of all the large arrays (aux, q,
-c     work) is delayed until the last possible moment in case any of the
-c     user code called before them is a memory hog.
+c     Modified July 2013 to use dynamic allocation, new input file
+c     format.  Allocation of all the large arrays (aux, q, work) is
+c     delayed until the last possible moment in case any of the user
+c     code called before them is a memory hog.
 c
       implicit double precision (a-h,o-z)
       external bc3,rpn3,rpt3,rptt3,src3,b4step3
