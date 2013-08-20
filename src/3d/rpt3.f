@@ -22,7 +22,7 @@ c     #             in the x-direction if ixyz=1,
 c     #             in the y-direction if ixyz=2, or
 c     #             in the z-direction if ixyz=3.
 c     #    asdq is an array of flux differences (A^*\Dq).
-c     #         asdq(i,:) is the flux difference propagating away from
+c     #         asdq(:,i) is the flux difference propagating away from
 c     #         the interface between cells i-1 and i.
 c     #    Note that asdq represents B^*\Dq if ixyz=2 or C^*\Dq if ixyz=3.
 c
@@ -60,9 +60,9 @@ c
       dimension   asdq(meqn, 1-mbc:maxm+mbc)
       dimension bmasdq(meqn, 1-mbc:maxm+mbc)
       dimension bpasdq(meqn, 1-mbc:maxm+mbc)
-      dimension   aux1(maux, 3, 1-mbc:maxm+mbc)
-      dimension   aux2(maux, 3, 1-mbc:maxm+mbc)
-      dimension   aux3(maux, 3, 1-mbc:maxm+mbc)
+      dimension   aux1(maux, 1-mbc:maxm+mbc, 3)
+      dimension   aux2(maux, 1-mbc:maxm+mbc, 3)
+      dimension   aux3(maux, 1-mbc:maxm+mbc, 3)
 c
       do i = 2-mbc, mx+mbc
          do m=1,meqn

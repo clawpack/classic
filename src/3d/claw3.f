@@ -117,7 +117,7 @@ c
 c        If method(6) = 0 then there is no capacity function.
 c        If method(6) = mcapa > 0  then there is a capacity function and
 c            capa(i,j,k), the "capacity" of the (i,j,k) cell, is assumed to be
-c            stored in aux(i,j,k,mcapa).
+c            stored in aux(mcapa,i,j,k).
 c            In this case we require method(7).ge.mcapa.
 c
 c    dx = grid spacing in x.
@@ -220,7 +220,7 @@ c                       the subroutine src2 must be provided.
 c
 c         method(6) = 0 if there is no capacity function capa.
 c                   = mcapa > 0 if there is a capacity function.  In this case
-c                       aux(i,j,k,mcapa) is the capacity of cell (i,j,k)
+c                       aux(mcapa,i,j,k) is the capacity of cell (i,j,k)
 c                       and you must also specify method(7) .ge. mcapa
 c                       and set aux.
 c
@@ -297,14 +297,14 @@ c  ---------------------------------------------------------------------
 c     subroutine rpn3(ixyz,maxm,meqn,mwaves,mbc,mx,ql,qr,
 c    &                  auxl,auxr,maux,wave,s,amdq,apdq)
 c    implicit double precision (a-h,o-z)
-c     dimension wave(1-mbc:maxm+mbc, meqn, mwaves)
-c     dimension    s(1-mbc:maxm+mbc, mwaves)
-c     dimension   ql(1-mbc:maxm+mbc, meqn)
-c     dimension   qr(1-mbc:maxm+mbc, meqn)
-c     dimension amdq(1-mbc:maxm+mbc, meqn)
-c     dimension apdq(1-mbc:maxm+mbc, meqn)
-c     dimension auxl(1-mbc:maxm+mbc, maux, 3)
-c     dimension auxr(1-mbc:maxm+mbc, maux, 3)
+c     dimension wave(mwaves, meqn, 1-mbc:maxm+mbc)
+c     dimension    s(mwaves, 1-mbc:maxm+mbc)
+c     dimension   ql(meqn, 1-mbc:maxm+mbc)
+c     dimension   qr(meqn, 1-mbc:maxm+mbc)
+c     dimension amdq(meqn, 1-mbc:maxm+mbc)
+c     dimension apdq(meqn, 1-mbc:maxm+mbc)
+c     dimension auxl(maux, 1-mbc:maxm+mbc)
+c     dimension auxr(maux, 1-mbc:maxm+mbc)
 c  ---------------------------------------------------------------------
 c         solve Riemann problems along one slice of data.
 c         This data is along a slice in the x-direction if ixyz=1
@@ -314,14 +314,11 @@ c
 c         On input, ql contains the state vector at the left edge of each cell
 c                   qr contains the state vector at the right edge of each cell
 c
-c         auxl(i,ma,2) contains auxiliary data for cells along this slice,
+c         auxl(ma,i) contains auxiliary data for cells along this slice,
 c            where ma=1,maux in the case where maux=method(7) > 0.
-c         auxl(i,ma,1) and auxl(i,ma,3) contain auxiliary data along
-c         neighboring slices that generally aren't needed in the rpn3 routine.
 c
-c
-c         Note that the i'th Riemann problem has left state qr(i-1,:)
-c                                            and right state ql(i,:)
+c         Note that the i'th Riemann problem has left state qr(:,i-1)
+c                                            and right state ql(:,i)
 c         From the basic clawpack routines, this routine is called with ql = qr
 c
 c         More flexibility is allowed
@@ -330,13 +327,13 @@ c         that requires left and rate states at each interface.
 c
 c
 c          On output,
-c             wave(i,m,mw) is the mth component of the jump across
+c             wave(m,mw,i) is the mth component of the jump across
 c                              wave number mw in the ith Riemann problem.
-c             s(i,mw) is the wave speed of wave number mw in the
+c             s(mw,i) is the wave speed of wave number mw in the
 c                              ith Riemann problem.
-c             amdq(i,m) is the m'th component of the left-going flux
+c             amdq(m,i) is the m'th component of the left-going flux
 c                       difference.
-c             apdq(i,m) is the m'th component of the right-going flux
+c             apdq(m,i) is the m'th component of the right-going flux
 c                       difference.
 c           It is assumed that each wave consists of a jump discontinuity
 c           propagating at a single speed, as results, for example, from a
@@ -352,14 +349,14 @@ c     subroutine rpt3(ixyz,icoor,maxm,meqn,mwaves,mbc,mx,
 c    &                  ql,qr,aux1,aux2,aux3,maux,imp,asdq,
 c    &                  bmasdq,bpasdq)
 c     implicit double precision (a-h,o-z)
-c     dimension     ql(1-mbc:maxm+mbc, meqn)
-c     dimension     qr(1-mbc:maxm+mbc, meqn)
-c     dimension   asdq(1-mbc:maxm+mbc, meqn)
-c     dimension bmasdq(1-mbc:maxm+mbc, meqn)
-c     dimension bpasdq(1-mbc:maxm+mbc, meqn)
-c     dimension   aux1(1-mbc:maxm+mbc, maux, 3)
-c     dimension   aux2(1-mbc:maxm+mbc, maux, 3)
-c     dimension   aux3(1-mbc:maxm+mbc, maux, 3)
+c     dimension     ql(meqn, 1-mbc:maxm+mbc)
+c     dimension     qr(meqn, 1-mbc:maxm+mbc)
+c     dimension   asdq(meqn, 1-mbc:maxm+mbc)
+c     dimension bmasdq(meqn, 1-mbc:maxm+mbc)
+c     dimension bpasdq(meqn, 1-mbc:maxm+mbc)
+c     dimension   aux1(maux, 1-mbc:maxm+mbc, 3)
+c     dimension   aux2(maux, 1-mbc:maxm+mbc, 3)
+c     dimension   aux3(maux, 1-mbc:maxm+mbc, 3)
 c  -------------------------------------------------
 c       On input,
 c
@@ -434,14 +431,14 @@ c     subroutine rptt3(ixyz,icoor,maxm,meqn,mwaves,mbc,mx,
 c    &                  ql,qr,aux1,aux2,aux3,maux,imp,impt,bsasdq,
 c    &                  cmbsasdq,cpbsasdq)
 c     implicit double precision (a-h,o-z)
-c     dimension      ql(1-mbc:maxm+mbc, meqn)
-c     dimension      qr(1-mbc:maxm+mbc, meqn)
-c     dimension   bsasdq(1-mbc:maxm+mbc, meqn)
-c     dimension cmbsasdq(1-mbc:maxm+mbc, meqn)
-c     dimension cpbsasdq(1-mbc:maxm+mbc, meqn)
-c     dimension   aux1(1-mbc:maxm+mbc, maux, 3)
-c     dimension   aux2(1-mbc:maxm+mbc, maux, 3)
-c     dimension   aux3(1-mbc:maxm+mbc, maux, 3)
+c     dimension      ql(meqn, 1-mbc:maxm+mbc)
+c     dimension      qr(meqn, 1-mbc:maxm+mbc)
+c     dimension   bsasdq(meqn, 1-mbc:maxm+mbc)
+c     dimension cmbsasdq(meqn, 1-mbc:maxm+mbc)
+c     dimension cpbsasdq(meqn, 1-mbc:maxm+mbc)
+c     dimension   aux1(maux, 1-mbc:maxm+mbc, 3)
+c     dimension   aux2(maux, 1-mbc:maxm+mbc, 3)
+c     dimension   aux3(maux, 1-mbc:maxm+mbc, 3)
 c  -------------------------------------------------
 c       On input,
 c
@@ -532,19 +529,19 @@ c           The form of this subroutine is
 c  -------------------------------------------------
 c      subroutine src3(meqn,mbc,mx,my,mz,q,aux,t,dt)
 c      implicit double precision (a-h,o-z)
-c      dimension    q(1-mbc:mx+mbc, 1-mbc:my+mbc,
-c     &               1-mbc:mz+mbc, meqn)
-c      dimension aux(1-mbc:mx+mbc, 1-mbc:my+mbc,
-c     &              1-mbc:mz+mbc, *)
+c      dimension    q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc,
+c     &               1-mbc:mz+mbc)
+c      dimension aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc,
+c     &              1-mbc:mz+mbc)
 c  -------------------------------------------------
 c      If method(7)=0  or the auxiliary variables are not needed in
 c      this solver,
 c      then the latter dimension statement can be omitted, but aux should
 c      still appear in the argument list.
 c
-c      On input, q(i,j,k,m) contains the data for solving the
+c      On input, q(m,i,j,k) contains the data for solving the
 c                source term equation.
-c      On output, q(i,j,k,m) should have been replaced by the solution to
+c      On output, q(m,i,j,k) should have been replaced by the solution to
 c                 the source term equation after a step of length dt.
 c
 c      b4step3 = subroutine that is called from claw3 before each call to
@@ -556,10 +553,10 @@ c  -------------------------------------------------
 c      subroutine b4step3(mbc,mx,my,mz,meqn,q,
 c    &            xlower,ylower,zlower,dx,dy,dz,time,dt,maux,aux)
 c      implicit double precision (a-h,o-z)
-c      dimension     q(1-mbc:mx+mbc, 1-mbc:my+mbc,
-c     &                1-mbc:mz+mbc, meqn)
-c      dimension   aux(1-mbc:mx+mbc, 1-mbc:my+mbc,
-c     &                1-mbc:mz+mbc, maux)
+c      dimension     q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc,
+c     &                1-mbc:mz+mbc)
+c      dimension   aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc,
+c     &                1-mbc:mz+mbc)
 c  -------------------------------------------------
 
 c

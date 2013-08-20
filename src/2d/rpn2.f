@@ -26,8 +26,8 @@ c     #                       f(qr(i-1)) - f(ql(i))
 c     #                   into leftgoing and rightgoing parts respectively.
 c     #               
 c
-c     # Note that the i'th Riemann problem has left state qr(i-1,:)
-c     #                                    and right state ql(i,:)
+c     # Note that the i'th Riemann problem has left state qr(:,i-1)
+c     #                                    and right state ql(:,i)
 c     # From the basic clawpack routines, this routine is called with ql = qr
 c     # maux=0 and aux arrays are unused in this example.
 c

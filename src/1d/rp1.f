@@ -17,8 +17,8 @@ c     #            s the speeds,
 c     #            amdq the  left-going flux difference  A^- \Delta q
 c     #            apdq the right-going flux difference  A^+ \Delta q
 c
-c     # Note that the i'th Riemann problem has left state qr(i-1,:)
-c     #                                    and right state ql(i,:)
+c     # Note that the i'th Riemann problem has left state qr(:,i-1)
+c     #                                    and right state ql(:,i)
 c     # From the basic clawpack routine step1, rp is called with ql = qr = q.
 c
 c

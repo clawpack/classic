@@ -16,9 +16,9 @@
 !     # go into the arrays fadd and gadd.  The notation is written assuming
 !     # we are solving along a 1D slice in the x-direction.
 
-!     # fadd(i,.) modifies F to the left of cell i
-!     # gadd(i,.,1) modifies G below cell i
-!     # gadd(i,.,2) modifies G above cell i
+!     # fadd(:,i) modifies F to the left of cell i
+!     # gadd(:,i,1) modifies G below cell i
+!     # gadd(:,i,2) modifies G above cell i
 
 !     # The method used is specified by method(2:3):
 
@@ -44,7 +44,7 @@
 !                  = dt/(dy*capa(icom,j))  if method(6) = 1
 
 !     Notation:
-!        The jump in q (q1d(i,:)-q1d(i-1,:))  is split by rpn2 into
+!        The jump in q (q1d(:,i)-q1d(:,i-1))  is split by rpn2 into
 !            amdq =  the left-going flux difference  A^- Delta q
 !            apdq = the right-going flux difference  A^+ Delta q
 !        Each of these is split by rpt2 into
