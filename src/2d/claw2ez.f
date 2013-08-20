@@ -112,7 +112,11 @@ c
       read(55,*) nv(1)      ! Maximum number of steps
 
       read(55,*) dt_variable    ! Variable or fixed dt
-      method(1) = (dt_variable .eqv. .true.)
+      if (dt_variable) then
+         method(1) = 1
+      else
+         method(1) = 0
+      end if
       read(55,*) method(2)    ! Order
       read(55,*) method(3)    ! Transverse propagation style
       read(55,*) dimensional_split    ! Whether to use dimensional splitting

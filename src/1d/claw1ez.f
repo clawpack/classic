@@ -116,7 +116,11 @@ c
       read(55,*) nv(1)      ! Maximum number of steps
 
       read(55,*) dt_variable    ! Variable or fixed dt
-      method(1) = (dt_variable .eqv. .true.)
+      if (dt_variable) then
+         method(1) = 1
+      else
+         method(1) = 0
+      end if
       read(55,*) method(2)    ! Order
       ! method(3) (transverse order) not used in 1D
       ! No dimensional splitting in 1D
