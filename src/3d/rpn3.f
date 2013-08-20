@@ -25,8 +25,8 @@ c     # On output, wave contains the waves, s the speeds,
 c     # and amdq, apdq the left-going and right-going flux differences,
 c     # respectively.  
 c
-c     # Note that the i'th Riemann problem has left state qr(i-1,:)
-c     #                                    and right state ql(i,:)
+c     # Note that the i'th Riemann problem has left state qr(:,i-1)
+c     #                                    and right state ql(:,i)
 c     # From the basic clawpack routines, this routine is called with ql = qr
 c
       implicit real*8(a-h,o-z)

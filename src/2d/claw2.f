@@ -89,16 +89,16 @@ c       physical domain.  In addition there are mbc grid cells
 c       along each edge of the grid that are used for boundary
 c       conditions.
 c 
-c    q(1-mbc:mx+mbc, 1-mbc:my+mbc, meqn) 
+c    q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc) 
 c        On input:  initial data at time tstart.
 c        On output: final solution at time tend.
-c        q(i,j,m) = value of mth component in the (i,j) cell.
-c        Values within the physical domain are in q(i,j,m) 
+c        q(m,i,j) = value of mth component in the (i,j) cell.
+c        Values within the physical domain are in q(m,i,j) 
 c                for i = 1,2,...,mx   and j = 1,2,...,my.
 c        mbc extra cells on each end are needed for boundary conditions
 c        as specified in the routine bc2.
 c
-c    aux(1-mbc:mx+mbc, 1-mbc:my+mbc, maux)
+c    aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc)
 c        Array of auxiliary variables that are used in specifying the problem.
 c        If method(7) = 0 then there are no auxiliary variables and aux
 c                         can be a dummy variable.
@@ -114,7 +114,7 @@ c
 c        If method(6) = 0 then there is no capacity function.
 c        If method(6) = mcapa > 0  then there is a capacity function and 
 c            capa(i,j), the "capacity" of the (i,j) cell, is assumed to be 
-c            stored in aux(i,j,mcapa).
+c            stored in aux(mcapa,i,j).
 c            In this case we require method(7).ge.mcapa.
 c
 c    dx = grid spacing in x.  
@@ -243,7 +243,7 @@ c
 c
 c         method(6) = 0 if there is no capacity function capa.  
 c                   = mcapa > 0 if there is a capacity function.  In this case 
-c                       aux(i,j,mcapa) is the capacity of cell (i,j) and you
+c                       aux(mcapa,i,j) is the capacity of cell (i,j) and you
 c                       must also specify method(7) .ge. mcapa and set aux.
 c
 c         method(7) = 0 if there is no aux array used.
@@ -315,17 +315,17 @@ c
 c          The form of this subroutine is
 c  -------------------------------------------------
 c     subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,
-c    &                  auxl,auxr,wave,s,amdq,apdq)
+c    &                  auxl,auxr,wave,s,amdq,apdq,maux)
 c
 c     implicit double precision (a-h,o-z)
-c     dimension wave(1-mbc:maxm+mbc, meqn, mwaves)
-c     dimension    s(1-mbc:maxm+mbc, mwaves)
-c     dimension   ql(1-mbc:maxm+mbc, meqn)
-c     dimension   qr(1-mbc:maxm+mbc, meqn)
-c     dimension auxl(1-mbc:maxm+mbc, *)
-c     dimension auxr(1-mbc:maxm+mbc, *)
-c     dimension amdq(1-mbc:maxm+mbc, meqn)
-c     dimension apdq(1-mbc:maxm+mbc, meqn)
+c     dimension wave(meqn, mwaves, 1-mbc:maxm+mbc)
+c     dimension    s(mwaves, 1-mbc:maxm+mbc)
+c     dimension   ql(meqn, 1-mbc:maxm+mbc)
+c     dimension   qr(meqn, 1-mbc:maxm+mbc)
+c     dimension auxl(maux, 1-mbc:maxm+mbc)
+c     dimension auxr(maux, 1-mbc:maxm+mbc)
+c     dimension amdq(meqn, 1-mbc:maxm+mbc)
+c     dimension apdq(meqn, 1-mbc:maxm+mbc)
 c  -------------------------------------------------
 c
 c         On input, ql contains the state vector at the left edge of each cell
@@ -336,8 +336,8 @@ c
 c         This data is along a slice in the x-direction if ixy=1
 c                                    or the y-direction if ixy=2.
 c
-c         Note that the i'th Riemann problem has left state qr(i-1,:)
-c                                            and right state ql(i,:)
+c         Note that the i'th Riemann problem has left state qr(:,i-1)
+c                                            and right state ql(:,i)
 c         In the standard clawpack routines, this Riemann solver is 
 c         called with ql=qr=q along this slice.  More flexibility is allowed
 c         in case the user wishes to implement another solution method
@@ -348,12 +348,12 @@ c         are passed in using auxl and auxr.  Again, in the standard routines
 c         auxl=auxr is just the values of aux along this slice.
 
 c          On output, 
-c             wave(i,m,mw) is the mth component of the jump across
+c             wave(m,mw,i) is the mth component of the jump across
 c                              wave number mw in the ith Riemann problem.
-c             s(i,mw) is the wave speed of wave number mw in the
+c             s(mw,i) is the wave speed of wave number mw in the
 c                              ith Riemann problem.
-c             amdq(i,m) is the m'th component of the left-going flux difference.
-c             apdq(i,m) is the m'th component of the right-going flux difference.
+c             amdq(m,i) is the m'th component of the left-going flux difference.
+c             apdq(m,i) is the m'th component of the right-going flux difference.
 c           It is assumed that each wave consists of a jump discontinuity
 c           propagating at a single speed, as results, for example, from a
 c           Roe approximate Riemann solver.  An entropy fix can be included
@@ -365,17 +365,17 @@ c           a flux difference asdq into waves in the transverse direction.
 c           The form of this subroutine is
 c  -------------------------------------------------
 c     subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,aux1,aux2,aux3,
-c                     imp,asdq,bmasdq,bpasdq)
+c                     imp,asdq,bmasdq,bpasdq,maux)
 c
 c     implicit double precision (a-h,o-z)
-c     dimension     ql(1-mbc:maxm+mbc, meqn)
-c     dimension     qr(1-mbc:maxm+mbc, meqn)
-c     dimension   aux1(1-mbc:maxm+mbc, maux)
-c     dimension   aux2(1-mbc:maxm+mbc, maux)
-c     dimension   aux3(1-mbc:maxm+mbc, maux)
-c     dimension   asdq(1-mbc:maxm+mbc, meqn)
-c     dimension bmasdq(1-mbc:maxm+mbc, meqn)
-c     dimension bpasdq(1-mbc:maxm+mbc, meqn)
+c     dimension     ql(meqn, 1-mbc:maxm+mbc)
+c     dimension     qr(meqn, 1-mbc:maxm+mbc)
+c     dimension   aux1(maux, 1-mbc:maxm+mbc)
+c     dimension   aux2(maux, 1-mbc:maxm+mbc)
+c     dimension   aux3(maux, 1-mbc:maxm+mbc)
+c     dimension   asdq(meqn, 1-mbc:maxm+mbc)
+c     dimension bmasdq(meqn, 1-mbc:maxm+mbc)
+c     dimension bpasdq(meqn, 1-mbc:maxm+mbc)
 c  -------------------------------------------------
 c          On input, 
 c              ql,qr is the data along some one-dimensional slice, as in rpn2
@@ -418,16 +418,16 @@ c  -------------------------------------------------
 c      subroutine src2(meqn,mbc,mx,my,xlower,ylower,
 c    &                 dx,dy,q,maux,aux,told,dt2)
 c      implicit double precision (a-h,o-z)
-c      dimension    q(1-mbc:mx+mbc, 1-mbc:my+mbc, meqn)
-c      dimension aux(1-mbc:mx+mbc, 1-mbc:my+mbc, *)
+c      dimension   q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc)
+c      dimension aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc)
 c  -------------------------------------------------
 c      If method(7)=0  or the auxiliary variables are not needed in this solver,
 c      then the latter dimension statement can be omitted, but aux should
 c      still appear in the argument list.
 c
-c      On input, q(i,j,m) contains the data for solving the 
+c      On input, q(m,i,j) contains the data for solving the 
 c                source term equation.
-c      On output, q(i,j,m) should have been replaced by the solution to
+c      On output, q(m,i,j) should have been replaced by the solution to
 c                 the source term equation after a step of length dt.
 c
 c
@@ -442,8 +442,8 @@ c  -------------------------------------------------
 c      subroutine b4step2(mbc,mx,my,meqn,q,
 c    &            xlower,ylower,dx,dy,time,dt,maux,aux)
 c      implicit double precision (a-h,o-z)
-c      dimension   q(1-mbc:mx+mbc, meqn)
-c      dimension aux(1-mbc:mx+mbc, *)
+c      dimension   q(meqn, 1-mbc:mx+mbc)
+c      dimension aux(maux, 1-mbc:mx+mbc)
 c  -------------------------------------------------
 c
 c  

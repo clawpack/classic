@@ -9,8 +9,7 @@ c     An easy-to-use clawpack driver routine for simple applications
 c     Documentation is available at
 c                 http://www.amath.washington.edu/~claw/doc.html
 c
-c     Author: Randall J. LeVeque
-c     Version of August, 2002 --  CLAWPACK Version 4.1
+c     Authors: Randall J. LeVeque, Grady I. Lemoine
 c
       implicit double precision (a-h,o-z)
       external bc2,rpn2,rpt2,src2,b4step2

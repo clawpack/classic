@@ -14,22 +14,22 @@
 
 !     amdq, apdq, wave, s, and f are used locally:
 
-!     amdq(1-num_ghost:mx+num_ghost, num_eqn) = left-going flux-differences
-!     apdq(1-num_ghost:mx+num_ghost, num_eqn) = right-going flux-differences
+!     amdq(num_eqn, 1-num_ghost:mx+num_ghost) = left-going flux-differences
+!     apdq(num_eqn, 1-num_ghost:mx+num_ghost) = right-going flux-differences
 !        e.g. amdq(m,i) = m'th component of A^- \Delta q from i'th Riemann
 !                         problem (between cells i-1 and i).
 
-!     wave(1-num_ghost:mx+num_ghost, num_eqn, num_waves) = waves from solution of
+!     wave(num_eqn, num_waves, 1-num_ghost:mx+num_ghost) = waves from solution of
 !                                           Riemann problems,
 !            wave(m,mw,i) = mth component of jump in q across
 !                           wave in family mw in Riemann problem between
 !                           states i-1 and i.
 
-!     s(1-num_ghost:mx+num_ghost, num_waves) = wave speeds,
+!     s(num_waves, 1-num_ghost:mx+num_ghost) = wave speeds,
 !            s(m,iw) = speed of wave in family mw in Riemann problem between
 !                      states i-1 and i.
 
-!     f(1-num_ghost:mx+num_ghost, num_eqn) = correction fluxes for second order method
+!     f(num_eqn, 1-num_ghost:mx+num_ghost) = correction fluxes for second order method
 !            f(m,i) = mth component of flux at left edge of ith cell
 !     --------------------------------------------------------------------
 

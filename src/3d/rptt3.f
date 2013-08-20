@@ -65,9 +65,9 @@ c
       dimension   bsasdq(meqn, 1-mbc:maxm+mbc)
       dimension cmbsasdq(meqn, 1-mbc:maxm+mbc)
       dimension cpbsasdq(meqn, 1-mbc:maxm+mbc)
-      dimension     aux1(maux, 3, 1-mbc:maxm+mbc)
-      dimension     aux2(maux, 3, 1-mbc:maxm+mbc)
-      dimension     aux3(maux, 3, 1-mbc:maxm+mbc)
+      dimension     aux1(maux, 1-mbc:maxm+mbc, 3)
+      dimension     aux2(maux, 1-mbc:maxm+mbc, 3)
+      dimension     aux3(maux, 1-mbc:maxm+mbc, 3)
 
       do i = 2-mbc, mx+mbc
          do m=1,meqn
