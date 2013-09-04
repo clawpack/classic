@@ -193,8 +193,16 @@ c
         endif
 
       maxm = max0(mx, my, mz)
+      nthreads=1    ! Serial
+      !$omp parallel
+      !$omp single
+      !$ nthreads = omp_get_num_threads()
+      !$ maxthreads = omp_get_max_threads()
+      print *, 'nthreads=',nthreads,' maxthreads=',maxthreads 
+      !$omp end single
+      !$omp end parallel
       mwork = (maxm+2*mbc)*(46*meqn + mwaves + meqn*mwaves
-     &                     + 9*maux + 3)
+     &                     + 9*maux + 3)*nthreads
      &         + narray * (mx + 2*mbc) * (my + 2*mbc)
      &                  * (mz + 2*mbc) * meqn
 
@@ -284,7 +292,8 @@ c        # output initial data
       ! Allocate work array
       allocate(work(mwork), stat=allocate_status)
       if (allocate_status .ne. 0) then
-         print *, '*** Error allocating work array; exiting claw3ez'
+         print *, '*** Error (nthreads=',nthreads,
+     &        ') allocating work array; exiting claw3ez'
          go to 900
       end if
 
