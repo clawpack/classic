@@ -30,6 +30,8 @@
 !     #       term (mx+2num_ghost)(my+2num_ghost)*(mz+2num_ghost).
 !     #-----------------------------------------------------------------
 
+    !$ use omp_lib
+
     implicit real*8(a-h,o-z)
     external rpn3,rpt3,rptt3
     dimension qold(num_eqn, 1-num_ghost:mx+num_ghost, &

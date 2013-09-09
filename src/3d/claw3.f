@@ -608,6 +608,10 @@ c    Beginning of claw3 code
 c    ======================================================================
 c
       implicit real*8(a-h,o-z)
+
+c     F77 way to get OpenMP function declarations
+c$    include 'omp_lib.h'
+
       external bc3,rpn3,rpt3, rptt3
       dimension     q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc,
      &                1-mbc:mz+mbc)
@@ -678,11 +682,12 @@ c
        endif
 c
        nthreads=1               ! Serial
-       !$omp parallel
-       !$omp single
-       !$ nthreads = omp_get_num_threads()
-       !$omp end single
-       !$omp end parallel
+c$omp  parallel
+c$omp  single
+c$     nthreads = omp_get_num_threads()
+c$     maxthreads = omp_get_max_threads()
+c$omp  end single
+c$omp  end parallel
        mwork0 = (maxm+2*mbc)*(46*meqn + mwaves + meqn*mwaves
      &                      + 9*maux + 3)*nthreads
      &          + narray * (mx + 2*mbc) * (my + 2*mbc)

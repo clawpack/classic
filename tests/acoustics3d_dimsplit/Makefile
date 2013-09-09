@@ -3,8 +3,8 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 
 CLAW_PKG = classic
 EXE = xclaw
-FFLAGS = -g -fbounds-check -ffpe-trap=zero,overflow,invalid
-LFLAGS = -g
+FFLAGS = -g -fbounds-check -ffpe-trap=zero,overflow,invalid -fopenmp
+LFLAGS = -g -fopenmp
 
 # No modules in 3D Classic (yet)
 
