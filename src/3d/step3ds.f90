@@ -229,9 +229,12 @@
              
           !     # perform y sweeps
           !     ==================
+          !$OMP PARALLEL PRIVATE(me,me1,m,j,ma,ia,cfl1d) REDUCTION(MAX:cfl)
           me = 0 
+          !$ me = omp_get_thread_num()
           me1 = me + 1 
-          
+          cfl1d = 0.d0 
+          !$OMP DO COLLAPSE(2)
           do 100 k = 0, mz+1
              do 100 i = 0, mx+1
                 
@@ -305,15 +308,18 @@
                 endif
             
         100 END DO
+             !$omp end parallel
     
     else
     
     !     # perform z sweeps
     !     ==================
-       me = 0
+       !$OMP PARALLEL PRIVATE(me,me1,m,k,ma,ja,cfl1d) REDUCTION(MAX:cfl)
+       me = 0 
+       !$ me = omp_get_thread_num()
        me1 = me + 1 
-       
-       
+       cfl1d = 0.d0 
+       !$OMP DO COLLAPSE(2)
        do 150 j = 0, my+1
           do 150 i = 0, mx+1
              
@@ -387,6 +393,7 @@
                 endif
                 
 150          END DO
+      !$omp end parallel
              
           endif
           
