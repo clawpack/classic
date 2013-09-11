@@ -152,7 +152,7 @@
        !$ me = omp_get_thread_num()
        me1 = me + 1 
        cfl1d = 0.d0 
-       !$OMP DO COLLAPSE(2)
+       !$OMP DO COLLAPSE(2) SCHEDULE(GUIDED)
         do 50 k = 0,mz+1
             do 50 j = 0,my+1
             
@@ -234,7 +234,7 @@
           !$ me = omp_get_thread_num()
           me1 = me + 1 
           cfl1d = 0.d0 
-          !$OMP DO COLLAPSE(2)
+          !$OMP DO COLLAPSE(2) SCHEDULE(GUIDED)
           do 100 k = 0, mz+1
              do 100 i = 0, mx+1
                 
@@ -319,7 +319,7 @@
        !$ me = omp_get_thread_num()
        me1 = me + 1 
        cfl1d = 0.d0 
-       !$OMP DO COLLAPSE(2)
+       !$OMP DO COLLAPSE(2) SCHEDULE(GUIDED)
        do 150 j = 0, my+1
           do 150 i = 0, mx+1
              
