@@ -152,6 +152,13 @@
        !$ me = omp_get_thread_num()
        me1 = me + 1 
        cfl1d = 0.d0 
+
+       ! Guided schedule seems to produce a small performance increase
+       ! relative to static or dynamic for problems with uniform work
+       ! per column.  For problems with very nonuniform work per
+       ! column, either guided or dynamic is necessary to keep all the
+       ! threads busy.
+
        !$OMP DO COLLAPSE(2) SCHEDULE(GUIDED)
         do 50 k = 0,mz+1
             do 50 j = 0,my+1
