@@ -42,10 +42,6 @@
 
     logical :: use_fwave
 
-    ! Variables only used with OpenMP parallelization
-    !$ integer, dimension(1-num_ghost:maxm+num_ghost, 1-num_ghost:maxm+num_ghost) :: col_lock
-    !$ logical, dimension(:,:), allocatable :: col_needed
-
 !f2py intent(out) cfl
 !f2py intent(in,out) qnew
 !f2py optional q1d, qadd, fadd, gadd, hadd, dtdx1d, dtdy1d, dtdz1d
@@ -67,8 +63,6 @@
     !$ nthreads = omp_get_num_threads()
     !$omp end single
     !$omp end parallel
-
-    !$ allocate(col_needed(9,nthreads))
 
     nsiz = (maxm+2*num_ghost)*num_eqn
     nsiz_w = nsiz * num_waves
@@ -139,29 +133,29 @@
         !$omp end parallel
     endif
 
-
-    ! Initialize column locks
-    !$omp parallel do collapse(2) schedule(guided)
-    !$ do i = 1-num_ghost, maxm+num_ghost
-        !$ do j = 1-num_ghost, maxm+num_ghost
-            !$ call omp_init_lock(col_lock(i,j))
-        !$ end do
-    !$ end do
-
-
 !     # perform x-sweeps
 !     ==================
 
-    !$omp parallel private(me,me1,m,i,ka,ma,cfl1d) reduction(max:cfl)
+    !$omp parallel private(me,me1,m,i,ka,ma,cfl1d,koffset,j) reduction(max:cfl)
     me = 0
     !$ me = omp_get_thread_num()
     me1 = me + 1
 
+    ! This offset/strided approach keeps race conditions from
+    ! happening with OpenMP parallelization.  Because the results of
+    ! the flux3 call affect the column flux3 was called on and all
+    ! adjacent columns, an easy way to keep threads from interfering
+    ! with each other is to make sure that every thread takes a column
+    ! that is at least three cells away from all the other threads in
+    ! each direction.  Thus, take the parallelized loop with a stride
+    ! of 3 on k and j, synchronize, then repeat at an offset.
+    do 51 koffset=0,2
+
     ! Guided or dynamic scheduling is necessary to keep all the
     ! threads busy if the work per column is very nonuniform.
 
-    !$omp do collapse(2) schedule(guided)
-    do 50 k = 0,mz+1
+    !$omp do schedule(guided)
+    do 50 k = koffset,mz+1,3
         do 50 j = 0,my+1
 
             forall (m = 1:num_eqn, i = 1-num_ghost:mx+num_ghost)
@@ -224,145 +218,59 @@
         !           # the modifications are used immediately to update qnew
         !           # in order to save storage.)
 
-            ! Update columns based on results from flux3.
-            ! Because the results from calling flux3 on one column get applied to
-            ! all adjacent columns, we need to be careful about possible race
-            ! conditions.  The approach taken here is to lock each column while
-            ! it's being worked on.  To help avoid making threads stall out too much,
-            ! each thread tries to acquire the lock for the each column it updates
-            ! in a non-blocking fashion; if it can't get the lock, it goes on to the
-            ! next column and will come back later to see if the column it wanted is
-            ! available.
-            ! Note that this probably needs the implicit flush that happens when
-            ! the lock functions are called, which happens only in OpenMP 2.5 and
-            ! later.
-
-            !$ col_needed(:,me1) = .true.    ! Start with all columns needed
             if(index_capa == 0)then
-                !$ do while (any(col_needed(:,me1)))
-
-                !$ if (col_needed(1,me1)) then
-                !$ if (omp_test_lock(col_lock(j,k))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,i,me1) &
                 - dtdx * (fadd(m,i+1,me1) - fadd(m,i,me1)) &
                 - dtdy * (gadd(m,2,0,i,me1) - gadd(m,1,0,i,me1)) &
                 - dtdz * (hadd(m,2,0,i,me1) - hadd(m,1,0,i,me1))
                 end forall
-                !$ call omp_unset_lock(col_lock(j,k))
-                !$ col_needed(1,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(2,me1)) then
-                !$ if (omp_test_lock(col_lock(j-1,k))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j-1,k)   = qnew(m,i,j-1,k) &
                 - dtdy * gadd(m,1,0,i,me1) &
                 - dtdz * ( hadd(m,2,-1,i,me1) &
                 -   hadd(m,1,-1,i,me1) )
                 end forall
-                !$ call omp_unset_lock(col_lock(j-1,k))
-                !$ col_needed(2,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(3,me1)) then
-                !$ if (omp_test_lock(col_lock(j-1,k-1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j-1,k-1) = qnew(m,i,j-1,k-1) &
                 - dtdy * gadd(m,1,-1,i,me1) &
                 - dtdz * hadd(m,1,-1,i,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j-1,k-1))
-                !$ col_needed(3,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(4,me1)) then
-                !$ if (omp_test_lock(col_lock(j,k-1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j,k-1)   = qnew(m,i,j,k-1) &
                 - dtdy * ( gadd(m,2,-1,i,me1) &
                 -   gadd(m,1,-1,i,me1) ) &
                 - dtdz * hadd(m,1,0,i,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j,k-1))
-                !$ col_needed(4,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(5,me1)) then
-                !$ if (omp_test_lock(col_lock(j+1,k-1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j+1,k-1) = qnew(m,i,j+1,k-1) &
                 + dtdy * gadd(m,2,-1,i,me1) &
                 - dtdz * hadd(m,1,1,i,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j+1,k-1))
-                !$ col_needed(5,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(6,me1)) then
-                !$ if (omp_test_lock(col_lock(j+1,k))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j+1,k)   = qnew(m,i,j+1,k) &
                 + dtdy * gadd(m,2,0,i,me1) &
                 - dtdz * ( hadd(m,2,1,i,me1) &
                 -   hadd(m,1,1,i,me1) )
                 end forall
-                !$ call omp_unset_lock(col_lock(j+1,k))
-                !$ col_needed(6,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(7,me1)) then
-                !$ if (omp_test_lock(col_lock(j+1,k+1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j+1,k+1) = qnew(m,i,j+1,k+1) &
                 + dtdy * gadd(m,2,1,i,me1) &
                 + dtdz * hadd(m,2,1,i,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j+1,k+1))
-                !$ col_needed(7,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(8,me1)) then
-                !$ if (omp_test_lock(col_lock(j,k+1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
                 - dtdy * ( gadd(m,2,1,i,me1) &
                 -   gadd(m,1,1,i,me1) ) &
                 + dtdz * hadd(m,2,0,i,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j,k+1))
-                !$ col_needed(8,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(9,me1)) then
-                !$ if (omp_test_lock(col_lock(j-1,k+1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j-1,k+1) = qnew(m,i,j-1,k+1) &
                 - dtdy * gadd(m,1,1,i,me1) &
                 + dtdz * hadd(m,2,-1,i,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j-1,k+1))
-                !$ col_needed(9,me1) = .false.
-                !$ end if
-                !$ end if
-
-                ! End column updating
-                !$ end do
             else
             !              # with capa array
-
-                !$ do while (any(col_needed(:,me1)))
-
-                !$ if (col_needed(1,me1)) then
-                !$ if (omp_test_lock(col_lock(j,k))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,i,me1) &
                 - (dtdx * (fadd(m,i+1,me1) - fadd(m,i,me1)) &
@@ -370,13 +278,6 @@
                 +  dtdz * (hadd(m,2,0,i,me1) - hadd(m,1,0,i,me1))) &
                 / aux(index_capa,i,j,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(j,k))
-                !$ col_needed(1,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(2,me1)) then
-                !$ if (omp_test_lock(col_lock(j-1,k))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j-1,k)   = qnew(m,i,j-1,k) &
                 - (dtdy * gadd(m,1,0,i,me1) &
@@ -384,26 +285,12 @@
                 -   hadd(m,1,-1,i,me1) )) &
                 / aux(index_capa,i,j-1,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(j-1,k))
-                !$ col_needed(2,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(3,me1)) then
-                !$ if (omp_test_lock(col_lock(j-1,k-1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j-1,k-1) = qnew(m,i,j-1,k-1) &
                 - (dtdy * gadd(m,1,-1,i,me1) &
                 +  dtdz * hadd(m,1,-1,i,me1)) &
                 / aux(index_capa,i,j-1,k-1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j-1,k-1))
-                !$ col_needed(3,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(4,me1)) then
-                !$ if (omp_test_lock(col_lock(j,k-1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j,k-1)   = qnew(m,i,j,k-1) &
                 - (dtdy * ( gadd(m,2,-1,i,me1) &
@@ -411,26 +298,12 @@
                 +  dtdz * hadd(m,1,0,i,me1)) &
                 / aux(index_capa,i,j,k-1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j,k-1))
-                !$ col_needed(4,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(5,me1)) then
-                !$ if (omp_test_lock(col_lock(j+1,k-1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j+1,k-1) = qnew(m,i,j+1,k-1) &
                 + (dtdy * gadd(m,2,-1,i,me1) &
                 -  dtdz * hadd(m,1,1,i,me1)) &
                 / aux(index_capa,i,j+1,k-1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j+1,k-1))
-                !$ col_needed(5,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(6,me1)) then
-                !$ if (omp_test_lock(col_lock(j+1,k))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j+1,k)   = qnew(m,i,j+1,k) &
                 + (dtdy * gadd(m,2,0,i,me1) &
@@ -438,26 +311,12 @@
                 -   hadd(m,1,1,i,me1) )) &
                 / aux(index_capa,i,j+1,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(j+1,k))
-                !$ col_needed(6,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(7,me1)) then
-                !$ if (omp_test_lock(col_lock(j+1,k+1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j+1,k+1) = qnew(m,i,j+1,k+1) &
                 + (dtdy * gadd(m,2,1,i,me1) &
                 +  dtdz * hadd(m,2,1,i,me1)) &
                 / aux(index_capa,i,j+1,k+1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j+1,k+1))
-                !$ col_needed(7,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(8,me1)) then
-                !$ if (omp_test_lock(col_lock(j,k+1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
                 - (dtdy * ( gadd(m,2,1,i,me1) &
@@ -465,29 +324,21 @@
                 -  dtdz * hadd(m,2,0,i,me1)) &
                 / aux(index_capa,i,j,k+1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j,k+1))
-                !$ col_needed(8,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(9,me1)) then
-                !$ if (omp_test_lock(col_lock(j-1,k+1))) then
                 forall (m = 1:num_eqn, i = 1:mx)
                 qnew(m,i,j-1,k+1) = qnew(m,i,j-1,k+1) &
                 - (dtdy * gadd(m,1,1,i,me1) &
                 -  dtdz * hadd(m,2,-1,i,me1)) &
                 / aux(index_capa,i,j-1,k+1)
                 end forall
-                !$ call omp_unset_lock(col_lock(j-1,k+1))
-                !$ col_needed(9,me1) = .false.
-                !$ end if
-                !$ end if
-
-                ! End column updating
-                !$ end do
             endif
 
     50 END DO
+    ! Flush memory (may not be necessary), then make sure everybody
+    ! synchronizes before the next offset
+
+    !$omp flush
+    !$omp barrier
+    51 end do
     !$omp end parallel
 
 
@@ -496,12 +347,15 @@
 !     ==================
 
 
-    !$omp parallel private(me,me1,m,j,ia,ma,cfl1d) reduction(max:cfl)
+    !$omp parallel private(me,me1,m,j,ia,ma,cfl1d,koffset,i) reduction(max:cfl)
     me = 0
     !$ me = omp_get_thread_num()
     me1 = me + 1
-    !$omp do collapse(2) schedule(guided)
-    do 100 k = 0, mz+1
+
+    do 101 koffset=0,2
+
+    !$omp do schedule(guided)
+    do 100 k = koffset, mz+1, 3
         do 100 i = 0, mx+1
         
             forall (m = 1:num_eqn, j = 1-num_ghost:my+num_ghost)
@@ -560,135 +414,61 @@
         !           # gadd - modifies the h-fluxes
         !           # hadd - modifies the f-fluxes
         
-            !$ col_needed(:,me1) = .true.    ! Start with all columns needed
             if( index_capa == 0)then
             !               # no capa array.  Standard flux differencing:
-
-                !$ do while (any(col_needed(:,me1)))
-
-                !$ if (col_needed(1,me1)) then
-                !$ if (omp_test_lock(col_lock(i,k))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,j,me1) &
                 - dtdy * (fadd(m,j+1,me1) - fadd(m,j,me1)) &
                 - dtdz * (gadd(m,2,0,j,me1) - gadd(m,1,0,j,me1)) &
                 - dtdx * (hadd(m,2,0,j,me1) - hadd(m,1,0,j,me1))
                 end forall
-                !$ call omp_unset_lock(col_lock(i,k))
-                !$ col_needed(1,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(2,me1)) then
-                !$ if (omp_test_lock(col_lock(i,k+1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
                 + dtdz * gadd(m,2,0,j,me1) &
                 - dtdx * ( hadd(m,2,1,j,me1) &
                 -   hadd(m,1,1,j,me1) )
                 end forall
-                !$ call omp_unset_lock(col_lock(i,k+1))
-                !$ col_needed(2,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(3,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,k+1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i+1,j,k+1) = qnew(m,i+1,j,k+1) &
                 + dtdz * gadd(m,2,1,j,me1) &
                 +  dtdx * hadd(m,2,1,j,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,k+1))
-                !$ col_needed(3,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(4,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,k))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i+1,j,k)   = qnew(m,i+1,j,k) &
                 - dtdz * ( gadd(m,2,1,j,me1) &
                 -   gadd(m,1,1,j,me1) ) &
                 + dtdx * hadd(m,2,0,j,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,k))
-                !$ col_needed(4,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(5,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,k-1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i+1,j,k-1) = qnew(m,i+1,j,k-1) &
                 - dtdz * gadd(m,1,1,j,me1) &
                 + dtdx * hadd(m,2,-1,j,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,k-1))
-                !$ col_needed(5,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(6,me1)) then
-                !$ if (omp_test_lock(col_lock(i,k-1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i,j,k-1)   = qnew(m,i,j,k-1) &
                 - dtdz * gadd(m,1,0,j,me1) &
                 - dtdx * ( hadd(m,2,-1,j,me1) &
                 -   hadd(m,1,-1,j,me1) )
                 end forall
-                !$ call omp_unset_lock(col_lock(i,k-1))
-                !$ col_needed(6,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(7,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,k-1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i-1,j,k-1) = qnew(m,i-1,j,k-1) &
                 - dtdz * gadd(m,1,-1,j,me1) &
                 - dtdx * hadd(m,1,-1,j,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,k-1))
-                !$ col_needed(7,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(8,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,k))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
                 - dtdz * ( gadd(m,2,-1,j,me1) &
                 -   gadd(m,1,-1,j,me1) ) &
                 - dtdx * hadd(m,1,0,j,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,k))
-                !$ col_needed(8,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(9,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,k+1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i-1,j,k+1) = qnew(m,i-1,j,k+1) &
                 + dtdz * gadd(m,2,-1,j,me1) &
                 -  dtdx*hadd(m,1,1,j,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,k+1))
-                !$ col_needed(9,me1) = .false.
-                !$ end if
-                !$ end if
-
-                ! End column updating
-                !$ end do
             else
             
             !              #with capa array.
-
-                !$ do while (any(col_needed(:,me1)))
-
-                !$ if (col_needed(1,me1)) then
-                !$ if (omp_test_lock(col_lock(i,k))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,j,me1) &
                 - (dtdy * (fadd(m,j+1,me1) - fadd(m,j,me1)) &
@@ -696,13 +476,6 @@
                 +  dtdx * (hadd(m,2,0,j,me1) - hadd(m,1,0,j,me1))) &
                 / aux(index_capa,i,j,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i,k))
-                !$ col_needed(1,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(2,me1)) then
-                !$ if (omp_test_lock(col_lock(i,k+1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
                 + (dtdz * gadd(m,2,0,j,me1) &
@@ -710,26 +483,12 @@
                 -   hadd(m,1,1,j,me1) )) &
                 / aux(index_capa,i,j,k+1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i,k+1))
-                !$ col_needed(2,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(3,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,k+1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i+1,j,k+1) = qnew(m,i+1,j,k+1) &
                 + (dtdz * gadd(m,2,1,j,me1) &
                 +  dtdx * hadd(m,2,1,j,me1)) &
                 / aux(index_capa,i+1,j,k+1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,k+1))
-                !$ col_needed(3,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(4,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,k))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i+1,j,k)   = qnew(m,i+1,j,k) &
                 - (dtdz * ( gadd(m,2,1,j,me1) &
@@ -737,26 +496,12 @@
                 -  dtdx * hadd(m,2,0,j,me1) ) &
                 / aux(index_capa,i+1,j,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,k))
-                !$ col_needed(4,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(5,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,k-1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i+1,j,k-1) = qnew(m,i+1,j,k-1) &
                 - (dtdz * gadd(m,1,1,j,me1) &
                 -  dtdx * hadd(m,2,-1,j,me1)) &
                 / aux(index_capa,i+1,j,k-1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,k-1))
-                !$ col_needed(5,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(6,me1)) then
-                !$ if (omp_test_lock(col_lock(i,k-1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i,j,k-1)   = qnew(m,i,j,k-1) &
                 - (dtdz * gadd(m,1,0,j,me1) &
@@ -764,26 +509,12 @@
                 -   hadd(m,1,-1,j,me1) )) &
                 / aux(index_capa,i,j,k-1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i,k-1))
-                !$ col_needed(6,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(7,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,k-1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i-1,j,k-1) = qnew(m,i-1,j,k-1) &
                 - (dtdz * gadd(m,1,-1,j,me1) &
                 +  dtdx * hadd(m,1,-1,j,me1)) &
                 / aux(index_capa,i-1,j,k-1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,k-1))
-                !$ col_needed(7,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(8,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,k))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
                 - (dtdz * ( gadd(m,2,-1,j,me1) &
@@ -791,30 +522,20 @@
                 +  dtdx * hadd(m,1,0,j,me1)) &
                 / aux(index_capa,i-1,j,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,k))
-                !$ col_needed(8,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(9,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,k+1))) then
                 forall (m = 1:num_eqn, j = 1:my)
                 qnew(m,i-1,j,k+1) = qnew(m,i-1,j,k+1) &
                 + (dtdz * gadd(m,2,-1,j,me1) &
                 -  dtdx*hadd(m,1,1,j,me1)) &
                 / aux(index_capa,i-1,j,k+1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,k+1))
-                !$ col_needed(9,me1) = .false.
-                !$ end if
-                !$ end if
-
-                ! End column updating
-                !$ end do
             endif
 
         
     100 END DO
+
+    !$omp flush
+    !$omp barrier
+    101 end do
     !$omp end parallel
 
 
@@ -823,12 +544,15 @@
 !     ==================
 
 
-    !$omp parallel private(me,me1,m,k,ja,ma,cfl1d) reduction(max:cfl)
+    !$omp parallel private(me,me1,m,k,ja,ma,cfl1d,i,joffset) reduction(max:cfl)
     me = 0
     !$ me = omp_get_thread_num()
     me1 = me + 1
-    !$omp do collapse(2) schedule(guided)
-    do 150 j = 0, my+1
+
+    do 151 joffset=0,2
+
+    !$omp do schedule(guided)
+    do 150 j = joffset, my+1, 3
         do 150 i = 0, mx+1
         
             forall (m = 1:num_eqn, k = 1-num_ghost:mz+num_ghost)
@@ -891,136 +615,62 @@
         !           # gadd - modifies the f-fluxes
         !           # hadd - modifies the g-fluxes
         
-            !$ col_needed(:,me1) = .true.    ! Start with all columns needed
             if(index_capa == 0)then
             
             !              #no capa array. Standard flux differencing:
-            
-                !$ do while (any(col_needed(:,me1)))
-
-                !$ if (col_needed(1,me1)) then
-                !$ if (omp_test_lock(col_lock(i,j))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,k,me1) &
                 - dtdz * (fadd(m,k+1,me1) - fadd(m,k,me1)) &
                 - dtdx * (gadd(m,2,0,k,me1) - gadd(m,1,0,k,me1)) &
                 - dtdy * (hadd(m,2,0,k,me1) - hadd(m,1,0,k,me1))
                 end forall
-                !$ call omp_unset_lock(col_lock(i,j))
-                !$ col_needed(1,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(2,me1)) then
-                !$ if (omp_test_lock(col_lock(i,j+1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i,j+1,k)   = qnew(m,i,j+1,k) &
                 - dtdx * ( gadd(m,2,1,k,me1) &
                 -   gadd(m,1,1,k,me1) ) &
                 + dtdy * hadd(m,2,0,k,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i,j+1))
-                !$ col_needed(2,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(3,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,j+1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i+1,j+1,k) = qnew(m,i+1,j+1,k) &
                 + dtdx * gadd(m,2,1,k,me1) &
                 + dtdy * hadd(m,2,1,k,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,j+1))
-                !$ col_needed(3,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(4,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,j))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i+1,j,k)   = qnew(m,i+1,j,k) &
                 + dtdx * gadd(m,2,0,k,me1) &
                 - dtdy * ( hadd(m,2,1,k,me1) &
                 -   hadd(m,1,1,k,me1) )
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,j))
-                !$ col_needed(4,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(5,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,j-1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i+1,j-1,k) = qnew(m,i+1,j-1,k) &
                 + dtdx * gadd(m,2,-1,k,me1) &
                 - dtdy * hadd(m,1,1,k,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,j-1))
-                !$ col_needed(5,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(6,me1)) then
-                !$ if (omp_test_lock(col_lock(i,j-1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i,j-1,k)   = qnew(m,i,j-1,k) &
                 - dtdx * ( gadd(m,2,-1,k,me1) &
                 -   gadd(m,1,-1,k,me1) ) &
                 - dtdy * hadd(m,1,0,k,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i,j-1))
-                !$ col_needed(6,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(7,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,j-1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i-1,j-1,k) = qnew(m,i-1,j-1,k) &
                 - dtdx * gadd(m,1,-1,k,me1) &
                 - dtdy * hadd(m,1,-1,k,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,j-1))
-                !$ col_needed(7,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(8,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,j))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
                 - dtdx * gadd(m,1,0,k,me1) &
                 - dtdy * ( hadd(m,2,-1,k,me1) &
                 -   hadd(m,1,-1,k,me1) )
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,j))
-                !$ col_needed(8,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(9,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,j+1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i-1,j+1,k) = qnew(m,i-1,j+1,k) &
                 - dtdx * gadd(m,1,1,k,me1) &
                 + dtdy * hadd(m,2,-1,k,me1)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,j+1))
-                !$ col_needed(9,me1) = .false.
-                !$ end if
-                !$ end if
-
-                ! End column updating
-                !$ end do
             else
             
             !              # with capa array
-            
-                !$ do while (any(col_needed(:,me1)))
-
-                !$ if (col_needed(1,me1)) then
-                !$ if (omp_test_lock(col_lock(i,j))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,k,me1) &
                 - (dtdz * (fadd(m,k+1,me1) - fadd(m,k,me1)) &
@@ -1028,13 +678,6 @@
                 +  dtdy * (hadd(m,2,0,k,me1) - hadd(m,1,0,k,me1))) &
                 / aux(index_capa,i,j,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i,j))
-                !$ col_needed(1,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(2,me1)) then
-                !$ if (omp_test_lock(col_lock(i,j+1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i,j+1,k) = qnew(m,i,j+1,k) &
                 - (dtdx * ( gadd(m,2,1,k,me1) &
@@ -1042,26 +685,12 @@
                 -  dtdy * hadd(m,2,0,k,me1)) &
                 / aux(index_capa,i,j+1,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i,j+1))
-                !$ col_needed(2,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(3,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,j+1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i+1,j+1,k) = qnew(m,i+1,j+1,k) &
                 + (dtdx * gadd(m,2,1,k,me1) &
                 +  dtdy * hadd(m,2,1,k,me1)) &
                 / aux(index_capa,i+1,j+1,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,j+1))
-                !$ col_needed(3,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(4,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,j))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i+1,j,k)   = qnew(m,i+1,j,k) &
                 + (dtdx * gadd(m,2,0,k,me1) &
@@ -1069,26 +698,12 @@
                 -   hadd(m,1,1,k,me1) )) &
                 / aux(index_capa,i+1,j,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,j))
-                !$ col_needed(4,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(5,me1)) then
-                !$ if (omp_test_lock(col_lock(i+1,j-1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i+1,j-1,k) = qnew(m,i+1,j-1,k) &
                 + (dtdx * gadd(m,2,-1,k,me1) &
                 -  dtdy * hadd(m,1,1,k,me1)) &
                 / aux(index_capa,i+1,j-1,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i+1,j-1))
-                !$ col_needed(5,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(6,me1)) then
-                !$ if (omp_test_lock(col_lock(i,j-1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i,j-1,k)   = qnew(m,i,j-1,k) &
                 - (dtdx * ( gadd(m,2,-1,k,me1) &
@@ -1096,26 +711,12 @@
                 +  dtdy * hadd(m,1,0,k,me1)) &
                 / aux(index_capa,i,j-1,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i,j-1))
-                !$ col_needed(6,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(7,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,j-1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i-1,j-1,k) = qnew(m,i-1,j-1,k) &
                 - (dtdx * gadd(m,1,-1,k,me1) &
                 +  dtdy * hadd(m,1,-1,k,me1)) &
                 / aux(index_capa,i-1,j-1,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,j-1))
-                !$ col_needed(7,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(8,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,j))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
                 - (dtdx * gadd(m,1,0,k,me1) &
@@ -1123,40 +724,20 @@
                 -   hadd(m,1,-1,k,me1) )) &
                 / aux(index_capa,i-1,j,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,j))
-                !$ col_needed(8,me1) = .false.
-                !$ end if
-                !$ end if
-
-                !$ if (col_needed(9,me1)) then
-                !$ if (omp_test_lock(col_lock(i-1,j+1))) then
                 forall (m = 1:num_eqn, k = 1:mz)
                 qnew(m,i-1,j+1,k) = qnew(m,i-1,j+1,k) &
                 - (dtdx * gadd(m,1,1,k,me1) &
                 -  dtdy * hadd(m,2,-1,k,me1)) &
                 / aux(index_capa,i-1,j+1,k)
                 end forall
-                !$ call omp_unset_lock(col_lock(i-1,j+1))
-                !$ col_needed(9,me1) = .false.
-                !$ end if
-                !$ end if
-
-                ! End column updating
-                !$ end do
             endif
 
     150 END DO
+
+    !$omp flush
+    !$omp barrier
+    151 end do
     !$omp end parallel
-
-    ! Destroy column locks
-    !$omp parallel do collapse(2) schedule(guided)
-    !$ do i = 1-num_ghost, maxm+num_ghost
-        !$ do j = 1-num_ghost, maxm+num_ghost
-            !$ call omp_destroy_lock(col_lock(i,j))
-        !$ end do
-    !$ end do
-
-    !$ deallocate(col_needed)
 
     return
 
