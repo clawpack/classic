@@ -42,6 +42,10 @@
 
     logical :: use_fwave
 
+    ! These block sizes must be at least 2 to avoid multiple threads
+    ! trying to update the same grid cell
+    integer, parameter :: blksiz_i = 2, blksiz_j = 2, blksiz_k = 2
+
 !f2py intent(out) cfl
 !f2py intent(in,out) qnew
 !f2py optional q1d, qadd, fadd, gadd, hadd, dtdx1d, dtdy1d, dtdz1d
@@ -119,7 +123,14 @@
     dtdy = dt/dy
     dtdz = dt/dz
 
-    !$omp parallel private(me,me1,m,i,j,k,ma,ia,ja,ka,cfl1d,joffset,koffset) reduction(max:cfl)
+    ! Calculate the number of blocks to use in each grid direction
+    ! (integer division, rounding up)
+    nblk_i = (mx + blksiz_i + 1)/blksiz_i
+    nblk_j = (my + blksiz_j + 1)/blksiz_j
+    nblk_k = (mz + blksiz_k + 1)/blksiz_k
+
+    !$omp parallel private(me,me1,m,i,j,k,ma,ia,ja,ka,cfl1d,ioffset,joffset,koffset, &
+    !$omp                  iblk,jblk,kblk) reduction(max:cfl)
 
     me = 0
     !$ me = omp_get_thread_num()
@@ -145,16 +156,20 @@
     ! that is at least three cells away from all the other threads in
     ! each direction.  Thus, take the parallelized loop with a stride
     ! of 3 on k, synchronize, then repeat at an offset.
-    do 51 koffset=0,2
+    do 52 koffset=0,1
+    do 52 joffset=0,1
 
     ! Guided or dynamic scheduling is necessary to keep all the
     ! threads busy if the work per column is very nonuniform.  Dynamic
     ! with a chunk size of 1 seems to work well here, probably because
     ! there's a lot of work per iteration.
 
-    !$omp do schedule(dynamic,1)
-    do 50 k = koffset,mz+1,3
-        do 50 j = 0,my+1
+    !$omp do collapse(2) schedule(guided)
+    do 51 kblk = koffset, nblk_k-1, 2
+    do 51 jblk = joffset, nblk_j-1, 2
+
+    do 50 k = kblk*blksiz_k, min((kblk+1)*blksiz_k-1, mz+1)
+        do 50 j = jblk*blksiz_j, min((jblk+1)*blksiz_j-1, my+1)
 
             forall (m = 1:num_eqn, i = 1-num_ghost:mx+num_ghost)
         !                 # copy data along a slice into 1d array:
@@ -331,23 +346,29 @@
             endif
 
     50 END DO
+
+    51 end do
     ! Flush memory (may not be necessary), then make sure everybody
     ! synchronizes before the next offset
 
     !$omp flush
     !$omp barrier
-    51 end do
+    52 end do
 
 
 !     # perform y sweeps
 !     ==================
 
 
-    do 101 koffset=0,2
+    do 102 koffset=0,1
+    do 102 ioffset=0,1
 
-    !$omp do schedule(dynamic,1)
-    do 100 k = koffset, mz+1, 3
-        do 100 i = 0, mx+1
+    !$omp do collapse(2) schedule(guided)
+    do 101 kblk = koffset, nblk_k-1, 2
+    do 101 iblk = ioffset, nblk_i-1, 2
+
+    do 100 k = kblk*blksiz_k, min((kblk+1)*blksiz_k-1, mz+1)
+        do 100 i = iblk*blksiz_i, min((iblk+1)*blksiz_i-1, mx+1)
         
             forall (m = 1:num_eqn, j = 1-num_ghost:my+num_ghost)
         !                 # copy data along a slice into 1d array:
@@ -524,21 +545,27 @@
         
     100 END DO
 
+    101 end do
+
     !$omp flush
     !$omp barrier
-    101 end do
+    102 end do
 
 
 !     # perform z sweeps
 !     ==================
 
 
-    do 151 joffset=0,2
+    do 152 joffset=0,1
+    do 152 ioffset=0,1
 
-    !$omp do schedule(dynamic,1)
-    do 150 j = joffset, my+1, 3
-        do 150 i = 0, mx+1
-        
+    !$omp do collapse(2) schedule(guided)
+    do 151 jblk = joffset, nblk_j-1, 2
+    do 151 iblk = ioffset, nblk_i-1, 2
+
+    do 150 j = jblk*blksiz_j, min((jblk+1)*blksiz_j-1, my+1)
+        do 150 i = iblk*blksiz_i, min((iblk+1)*blksiz_i-1, mx+1)
+
             forall (m = 1:num_eqn, k = 1-num_ghost:mz+num_ghost)
         !                 # copy data along a slice into 1d array:
             q1d(m,k,me1) = qold(m,i,j,k)
@@ -718,9 +745,11 @@
 
     150 END DO
 
+    151 end do
+
     !$omp flush
     !$omp barrier
-    151 end do
+    152 end do
     !$omp end parallel
 
     return
