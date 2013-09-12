@@ -119,27 +119,23 @@
     dtdy = dt/dy
     dtdz = dt/dz
 
+    !$omp parallel private(me,me1,m,i,j,k,ma,ia,ja,ka,cfl1d,joffset,koffset) reduction(max:cfl)
+
+    me = 0
+    !$ me = omp_get_thread_num()
+    me1 = me + 1
+
     if (index_capa == 0) then
     !        # no capa array:
-        !$omp parallel private(i,me,me1)
-        me = 0
-        !$ me = omp_get_thread_num()
-        me1 = me + 1
         do 5 i=1-num_ghost,maxm+num_ghost
             dtdx1d(i,me1) = dtdx
             dtdy1d(i,me1) = dtdy
             dtdz1d(i,me1) = dtdz
         5 END DO
-        !$omp end parallel
     endif
 
 !     # perform x-sweeps
 !     ==================
-
-    !$omp parallel private(me,me1,m,i,ka,ma,cfl1d,koffset,j) reduction(max:cfl)
-    me = 0
-    !$ me = omp_get_thread_num()
-    me1 = me + 1
 
     ! This offset/strided approach keeps race conditions from
     ! happening with OpenMP parallelization.  Because the results of
@@ -148,7 +144,7 @@
     ! with each other is to make sure that every thread takes a column
     ! that is at least three cells away from all the other threads in
     ! each direction.  Thus, take the parallelized loop with a stride
-    ! of 3 on k and j, synchronize, then repeat at an offset.
+    ! of 3 on k, synchronize, then repeat at an offset.
     do 51 koffset=0,2
 
     ! Guided or dynamic scheduling is necessary to keep all the
@@ -339,18 +335,11 @@
     !$omp flush
     !$omp barrier
     51 end do
-    !$omp end parallel
-
 
 
 !     # perform y sweeps
 !     ==================
 
-
-    !$omp parallel private(me,me1,m,j,ia,ma,cfl1d,koffset,i) reduction(max:cfl)
-    me = 0
-    !$ me = omp_get_thread_num()
-    me1 = me + 1
 
     do 101 koffset=0,2
 
@@ -536,18 +525,11 @@
     !$omp flush
     !$omp barrier
     101 end do
-    !$omp end parallel
-
 
 
 !     # perform z sweeps
 !     ==================
 
-
-    !$omp parallel private(me,me1,m,k,ja,ma,cfl1d,i,joffset) reduction(max:cfl)
-    me = 0
-    !$ me = omp_get_thread_num()
-    me1 = me + 1
 
     do 151 joffset=0,2
 
