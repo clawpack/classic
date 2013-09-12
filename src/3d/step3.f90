@@ -148,9 +148,11 @@
     do 51 koffset=0,2
 
     ! Guided or dynamic scheduling is necessary to keep all the
-    ! threads busy if the work per column is very nonuniform.
+    ! threads busy if the work per column is very nonuniform.  Dynamic
+    ! with a chunk size of 1 seems to work well here, probably because
+    ! there's a lot of work per iteration.
 
-    !$omp do schedule(guided)
+    !$omp do schedule(dynamic,1)
     do 50 k = koffset,mz+1,3
         do 50 j = 0,my+1
 
@@ -343,7 +345,7 @@
 
     do 101 koffset=0,2
 
-    !$omp do schedule(guided)
+    !$omp do schedule(dynamic,1)
     do 100 k = koffset, mz+1, 3
         do 100 i = 0, mx+1
         
@@ -533,7 +535,7 @@
 
     do 151 joffset=0,2
 
-    !$omp do schedule(guided)
+    !$omp do schedule(dynamic,1)
     do 150 j = joffset, my+1, 3
         do 150 i = 0, mx+1
         
