@@ -1,10 +1,10 @@
 
-!     ==================================================================
-    subroutine step3(maxm,num_eqn,num_waves,num_ghost,mx,my, &
+!==================================================================
+subroutine step3(maxm,num_eqn,num_waves,num_ghost,mx,my, &
     mz,qold,qnew,aux,dx,dy,dz,dt,method,mthlim,cfl, &
     qadd,fadd,gadd,hadd,q1d,dtdx1d,dtdy1d,dtdz1d, &
     aux1,aux2,aux3,num_aux,work,mwork,use_fwave,rpn3,rpt3,rptt3)
-!     ==================================================================
+!==================================================================
 
 !     # Take one time step, updating q.
 !     # On entry, qold and qnew should be identical and give the
@@ -137,623 +137,737 @@
     me1 = me + 1
 
     if (index_capa == 0) then
-    !        # no capa array:
-        do 5 i=1-num_ghost,maxm+num_ghost
+        ! no capa array:
+        do i=1-num_ghost,maxm+num_ghost
             dtdx1d(i,me1) = dtdx
             dtdy1d(i,me1) = dtdy
             dtdz1d(i,me1) = dtdz
-        5 END DO
+        end do
     endif
 
-!     # perform x-sweeps
-!     ==================
+    ! perform x-sweeps
+    !==================
 
-    ! This offset/strided approach keeps race conditions from
-    ! happening with OpenMP parallelization.  Because the results of
-    ! the flux3 call affect the column flux3 was called on and all
-    ! adjacent columns, an easy way to keep threads from interfering
-    ! with each other is to make sure that every thread takes a column
-    ! that is at least three cells away from all the other threads in
-    ! each direction.  Thus, take the parallelized loop with a stride
-    ! of 3 on k, synchronize, then repeat at an offset.
-    do 52 koffset=0,1
-    do 52 joffset=0,1
+    ! This block-based approach keeps race conditions from happening
+    ! with OpenMP parallelization.  Because the results of the flux3
+    ! call affect the column flux3 was called on and all adjacent
+    ! columns, an easy way to keep threads from interfering with each
+    ! other is to make sure that every thread takes a column that is
+    ! at least three cells away from all the other threads in each
+    ! direction.  The code here accomplishes this by breaking the
+    ! columns into blocks; for a block size of 2 in all directions,
+    ! the breakdown looks like:
+    !
+    ! xx..xx..
+    ! xx..xx..
+    ! **++**++
+    ! **++**++
+    ! xx..xx..
+    ! xx..xx..
+    ! **++**++
+    ! **++**++
+    !
+    ! All the blocks of columns labeled with the same symbol (e.g. x)
+    ! are done in parallel in one pass; within each block, the work is
+    ! all done by one thread, avoiding race conditions.  Then the code
+    ! flushes memory and synchronizes, and starts the next set of
+    ! blocks (e.g. *).
+    !
+    ! Breaking up into blocks in this fashion helps provide a large
+    ! number of small, independent work items, which helps with
+    ! parallel performance.
+    do koffset=0,1
+        do joffset=0,1
 
-    ! Guided or dynamic scheduling is necessary to keep all the
-    ! threads busy if the work per column is very nonuniform.  Dynamic
-    ! with a chunk size of 1 seems to work well here, probably because
-    ! there's a lot of work per iteration.
+            ! Guided or dynamic scheduling is necessary to keep all the
+            ! threads busy if the work per column is very nonuniform.  With
+            ! many blocks to process, guided is probably the best choice.
 
-    !$omp do collapse(2) schedule(guided)
-    do 51 kblk = koffset, nblk_k-1, 2
-    do 51 jblk = joffset, nblk_j-1, 2
+            !$omp do collapse(2) schedule(guided)
+            do kblk = koffset, nblk_k-1, 2
+                do jblk = joffset, nblk_j-1, 2
 
-    do 50 k = kblk*blksiz_k, min((kblk+1)*blksiz_k-1, mz+1)
-        do 50 j = jblk*blksiz_j, min((jblk+1)*blksiz_j-1, my+1)
+                    do k = kblk*blksiz_k, min((kblk+1)*blksiz_k-1, mz+1)
+                        do j = jblk*blksiz_j, min((jblk+1)*blksiz_j-1, my+1)
 
-            forall (m = 1:num_eqn, i = 1-num_ghost:mx+num_ghost)
-        !                 # copy data along a slice into 1d array:
-            q1d(m,i,me1) = qold(m,i,j,k)
-            end forall
-        
-            if (index_capa > 0)  then
-                do 23 i = 1-num_ghost, mx+num_ghost
-                    dtdx1d(i,me1) = dtdx / aux(index_capa,i,j,k)
-                23 END DO
-            endif
-        
-            if (num_aux > 0)  then
-            ! This odd construct may help improve cache locality.
-            ! (The F95 standard says each statement in the FORALL
-            ! must be executed for all indices before the next
-            ! statement is started, so this is different semantically
-            ! from putting all three indices in the same FORALL.)
-                forall (ka = -1:1)
-                forall (ma = 1:num_aux, i = 1-num_ghost:mx+num_ghost)
-                aux1(ma, i, 2+ka, me1) = aux(ma, i, j-1, k+ka)
-                aux2(ma, i, 2+ka, me1) = aux(ma, i,   j, k+ka)
-                aux3(ma, i, 2+ka, me1) = aux(ma, i, j+1, k+ka)
-                end forall
-                end forall
-            endif
-        
-        !           # compute modifications fadd, gadd and hadd to fluxes along
-        !           # this slice:
-        
-            call flux3(1,maxm,num_eqn,num_waves,num_ghost,mx, &
-            q1d(1,1-num_ghost,me1),dtdx1d(1-num_ghost,me1),dtdy,dtdz, &
-            aux1(1,1-num_ghost,1,me1),aux2(1,1-num_ghost,1,me1), &
-            aux3(1,1-num_ghost,1,me1),num_aux, &
-            method,mthlim,qadd(1,1-num_ghost,me1),fadd(1,1-num_ghost,me1), &
-            gadd(1,1,-1,1-num_ghost,me1),hadd(1,1,-1,1-num_ghost,me1),cfl1d, &
-            work(i0wave+me*nsiz_w),work(i0s+me*nsiz_s),work(i0amdq+me*nsiz), &
-            work(i0apdq+me*nsiz),work(i0cqxx+me*nsiz), &
-            work(i0bmamdq+me*nsiz),work(i0bmapdq+me*nsiz), &
-            work(i0bpamdq+me*nsiz),work(i0bpapdq+me*nsiz), &
-            work(i0cmamdq+me*nsiz),work(i0cmapdq+me*nsiz), &
-            work(i0cpamdq+me*nsiz),work(i0cpapdq+me*nsiz), &
-            work(i0cmamdq2+me*nsiz),work(i0cmapdq2+me*nsiz), &
-            work(i0cpamdq2+me*nsiz),work(i0cpapdq2+me*nsiz), &
-            work(i0bmcqxxp+me*nsiz),work(i0bpcqxxp+me*nsiz), &
-            work(i0bmcqxxm+me*nsiz),work(i0bpcqxxm+me*nsiz), &
-            work(i0cmcqxxp+me*nsiz),work(i0cpcqxxp+me*nsiz), &
-            work(i0cmcqxxm+me*nsiz),work(i0cpcqxxm+me*nsiz), &
-            work(i0bmcmamdq+me*nsiz),work(i0bmcmapdq+me*nsiz), &
-            work(i0bpcmamdq+me*nsiz),work(i0bpcmapdq+me*nsiz), &
-            work(i0bmcpamdq+me*nsiz),work(i0bmcpapdq+me*nsiz), &
-            work(i0bpcpamdq+me*nsiz),work(i0bpcpapdq+me*nsiz), &
-            rpn3,rpt3,rptt3,use_fwave)
-        
-            cfl = dmax1(cfl,cfl1d)
-        
-        !           # update qnew by flux differencing.
-        !           # (rather than maintaining arrays f, g and h for the total fluxes,
-        !           # the modifications are used immediately to update qnew
-        !           # in order to save storage.)
+                            ! copy data along a slice into 1d array:
+                            do i = 1-num_ghost, mx+num_ghost
+                                do m = 1, num_eqn
+                                    q1d(m,i,me1) = qold(m,i,j,k)
+                                end do
+                            end do
 
-            if(index_capa == 0)then
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,i,me1) &
-                - dtdx * (fadd(m,i+1,me1) - fadd(m,i,me1)) &
-                - dtdy * (gadd(m,2,0,i,me1) - gadd(m,1,0,i,me1)) &
-                - dtdz * (hadd(m,2,0,i,me1) - hadd(m,1,0,i,me1))
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j-1,k)   = qnew(m,i,j-1,k) &
-                - dtdy * gadd(m,1,0,i,me1) &
-                - dtdz * ( hadd(m,2,-1,i,me1) &
-                -   hadd(m,1,-1,i,me1) )
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j-1,k-1) = qnew(m,i,j-1,k-1) &
-                - dtdy * gadd(m,1,-1,i,me1) &
-                - dtdz * hadd(m,1,-1,i,me1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j,k-1)   = qnew(m,i,j,k-1) &
-                - dtdy * ( gadd(m,2,-1,i,me1) &
-                -   gadd(m,1,-1,i,me1) ) &
-                - dtdz * hadd(m,1,0,i,me1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j+1,k-1) = qnew(m,i,j+1,k-1) &
-                + dtdy * gadd(m,2,-1,i,me1) &
-                - dtdz * hadd(m,1,1,i,me1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j+1,k)   = qnew(m,i,j+1,k) &
-                + dtdy * gadd(m,2,0,i,me1) &
-                - dtdz * ( hadd(m,2,1,i,me1) &
-                -   hadd(m,1,1,i,me1) )
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j+1,k+1) = qnew(m,i,j+1,k+1) &
-                + dtdy * gadd(m,2,1,i,me1) &
-                + dtdz * hadd(m,2,1,i,me1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
-                - dtdy * ( gadd(m,2,1,i,me1) &
-                -   gadd(m,1,1,i,me1) ) &
-                + dtdz * hadd(m,2,0,i,me1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j-1,k+1) = qnew(m,i,j-1,k+1) &
-                - dtdy * gadd(m,1,1,i,me1) &
-                + dtdz * hadd(m,2,-1,i,me1)
-                end forall
-            else
-            !              # with capa array
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,i,me1) &
-                - (dtdx * (fadd(m,i+1,me1) - fadd(m,i,me1)) &
-                +  dtdy * (gadd(m,2,0,i,me1) - gadd(m,1,0,i,me1)) &
-                +  dtdz * (hadd(m,2,0,i,me1) - hadd(m,1,0,i,me1))) &
-                / aux(index_capa,i,j,k)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j-1,k)   = qnew(m,i,j-1,k) &
-                - (dtdy * gadd(m,1,0,i,me1) &
-                +  dtdz * ( hadd(m,2,-1,i,me1) &
-                -   hadd(m,1,-1,i,me1) )) &
-                / aux(index_capa,i,j-1,k)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j-1,k-1) = qnew(m,i,j-1,k-1) &
-                - (dtdy * gadd(m,1,-1,i,me1) &
-                +  dtdz * hadd(m,1,-1,i,me1)) &
-                / aux(index_capa,i,j-1,k-1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j,k-1)   = qnew(m,i,j,k-1) &
-                - (dtdy * ( gadd(m,2,-1,i,me1) &
-                -   gadd(m,1,-1,i,me1) ) &
-                +  dtdz * hadd(m,1,0,i,me1)) &
-                / aux(index_capa,i,j,k-1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j+1,k-1) = qnew(m,i,j+1,k-1) &
-                + (dtdy * gadd(m,2,-1,i,me1) &
-                -  dtdz * hadd(m,1,1,i,me1)) &
-                / aux(index_capa,i,j+1,k-1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j+1,k)   = qnew(m,i,j+1,k) &
-                + (dtdy * gadd(m,2,0,i,me1) &
-                - dtdz * ( hadd(m,2,1,i,me1) &
-                -   hadd(m,1,1,i,me1) )) &
-                / aux(index_capa,i,j+1,k)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j+1,k+1) = qnew(m,i,j+1,k+1) &
-                + (dtdy * gadd(m,2,1,i,me1) &
-                +  dtdz * hadd(m,2,1,i,me1)) &
-                / aux(index_capa,i,j+1,k+1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
-                - (dtdy * ( gadd(m,2,1,i,me1) &
-                -   gadd(m,1,1,i,me1) ) &
-                -  dtdz * hadd(m,2,0,i,me1)) &
-                / aux(index_capa,i,j,k+1)
-                end forall
-                forall (m = 1:num_eqn, i = 1:mx)
-                qnew(m,i,j-1,k+1) = qnew(m,i,j-1,k+1) &
-                - (dtdy * gadd(m,1,1,i,me1) &
-                -  dtdz * hadd(m,2,-1,i,me1)) &
-                / aux(index_capa,i,j-1,k+1)
-                end forall
-            endif
+                            if (index_capa > 0)  then
+                                do i = 1-num_ghost, mx+num_ghost
+                                    dtdx1d(i,me1) = dtdx / aux(index_capa,i,j,k)
+                                end do
+                            endif
 
-    50 END DO
+                            if (num_aux > 0)  then
+                                do ka = -1, 1
+                                    do i = 1-num_ghost, mx+num_ghost
+                                        do ma = 1, num_aux
+                                            aux1(ma, i, 2+ka, me1) = aux(ma, i, j-1, k+ka)
+                                        end do
+                                    end do
+                                end do
+                                do ka = -1, 1
+                                    do i = 1-num_ghost, mx+num_ghost
+                                        do ma = 1, num_aux
+                                            aux2(ma, i, 2+ka, me1) = aux(ma, i,   j, k+ka)
+                                        end do
+                                    end do
+                                end do
+                                do ka = -1, 1
+                                    do i = 1-num_ghost, mx+num_ghost
+                                        do ma = 1, num_aux
+                                            aux3(ma, i, 2+ka, me1) = aux(ma, i, j+1, k+ka)
+                                        end do
+                                    end do
+                                end do
+                            endif
 
-    51 end do
-    ! Flush memory (may not be necessary), then make sure everybody
-    ! synchronizes before the next offset
+                            ! compute modifications fadd, gadd and hadd to fluxes along
+                            ! this slice:
 
-    !$omp flush
-    !$omp barrier
-    52 end do
+                            call flux3(1,maxm,num_eqn,num_waves,num_ghost,mx, &
+                                q1d(1,1-num_ghost,me1),dtdx1d(1-num_ghost,me1),dtdy,dtdz, &
+                                aux1(1,1-num_ghost,1,me1),aux2(1,1-num_ghost,1,me1), &
+                                aux3(1,1-num_ghost,1,me1),num_aux, &
+                                method,mthlim,qadd(1,1-num_ghost,me1),fadd(1,1-num_ghost,me1), &
+                                gadd(1,1,-1,1-num_ghost,me1),hadd(1,1,-1,1-num_ghost,me1),cfl1d, &
+                                work(i0wave+me*nsiz_w),work(i0s+me*nsiz_s),work(i0amdq+me*nsiz), &
+                                work(i0apdq+me*nsiz),work(i0cqxx+me*nsiz), &
+                                work(i0bmamdq+me*nsiz),work(i0bmapdq+me*nsiz), &
+                                work(i0bpamdq+me*nsiz),work(i0bpapdq+me*nsiz), &
+                                work(i0cmamdq+me*nsiz),work(i0cmapdq+me*nsiz), &
+                                work(i0cpamdq+me*nsiz),work(i0cpapdq+me*nsiz), &
+                                work(i0cmamdq2+me*nsiz),work(i0cmapdq2+me*nsiz), &
+                                work(i0cpamdq2+me*nsiz),work(i0cpapdq2+me*nsiz), &
+                                work(i0bmcqxxp+me*nsiz),work(i0bpcqxxp+me*nsiz), &
+                                work(i0bmcqxxm+me*nsiz),work(i0bpcqxxm+me*nsiz), &
+                                work(i0cmcqxxp+me*nsiz),work(i0cpcqxxp+me*nsiz), &
+                                work(i0cmcqxxm+me*nsiz),work(i0cpcqxxm+me*nsiz), &
+                                work(i0bmcmamdq+me*nsiz),work(i0bmcmapdq+me*nsiz), &
+                                work(i0bpcmamdq+me*nsiz),work(i0bpcmapdq+me*nsiz), &
+                                work(i0bmcpamdq+me*nsiz),work(i0bmcpapdq+me*nsiz), &
+                                work(i0bpcpamdq+me*nsiz),work(i0bpcpapdq+me*nsiz), &
+                                rpn3,rpt3,rptt3,use_fwave)
 
+                            cfl = dmax1(cfl,cfl1d)
 
-!     # perform y sweeps
-!     ==================
+                            ! update qnew by flux differencing.
+                            ! (rather than maintaining arrays f, g and h for the total fluxes,
+                            ! the modifications are used immediately to update qnew
+                            ! in order to save storage.)
 
+                            if(index_capa == 0)then
+                                ! Order so that access to qnew is in memory-contiguous
+                                ! order as much as possible
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j-1,k-1) = qnew(m,i,j-1,k-1) &
+                                            - dtdy * gadd(m,1,-1,i,me1) &
+                                            - dtdz * hadd(m,1,-1,i,me1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k-1) = qnew(m,i,j,k-1) &
+                                            - dtdy * ( gadd(m,2,-1,i,me1) &
+                                            -   gadd(m,1,-1,i,me1) ) &
+                                            - dtdz * hadd(m,1,0,i,me1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j+1,k-1) = qnew(m,i,j+1,k-1) &
+                                            + dtdy * gadd(m,2,-1,i,me1) &
+                                            - dtdz * hadd(m,1,1,i,me1)
+                                    end do
+                                end do
 
-    do 102 koffset=0,1
-    do 102 ioffset=0,1
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j-1,k) = qnew(m,i,j-1,k) &
+                                            - dtdy * gadd(m,1,0,i,me1) &
+                                            - dtdz * ( hadd(m,2,-1,i,me1) &
+                                            -   hadd(m,1,-1,i,me1) )
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,i,me1) &
+                                            - dtdx * (fadd(m,i+1,me1) - fadd(m,i,me1)) &
+                                            - dtdy * (gadd(m,2,0,i,me1) - gadd(m,1,0,i,me1)) &
+                                            - dtdz * (hadd(m,2,0,i,me1) - hadd(m,1,0,i,me1))
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j+1,k) = qnew(m,i,j+1,k) &
+                                            + dtdy * gadd(m,2,0,i,me1) &
+                                            - dtdz * ( hadd(m,2,1,i,me1) &
+                                            -   hadd(m,1,1,i,me1) )
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j-1,k+1) = qnew(m,i,j-1,k+1) &
+                                            - dtdy * gadd(m,1,1,i,me1) &
+                                            + dtdz * hadd(m,2,-1,i,me1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k+1) = qnew(m,i,j,k+1) &
+                                            - dtdy * ( gadd(m,2,1,i,me1) &
+                                            -   gadd(m,1,1,i,me1) ) &
+                                            + dtdz * hadd(m,2,0,i,me1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j+1,k+1) = qnew(m,i,j+1,k+1) &
+                                            + dtdy * gadd(m,2,1,i,me1) &
+                                            + dtdz * hadd(m,2,1,i,me1)
+                                    end do
+                                end do
+                            else
+                                ! with capa array
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j-1,k-1) = qnew(m,i,j-1,k-1) &
+                                            - (dtdy * gadd(m,1,-1,i,me1) &
+                                            +  dtdz * hadd(m,1,-1,i,me1)) &
+                                            / aux(index_capa,i,j-1,k-1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k-1) = qnew(m,i,j,k-1) &
+                                            - (dtdy * ( gadd(m,2,-1,i,me1) &
+                                            -   gadd(m,1,-1,i,me1) ) &
+                                            +  dtdz * hadd(m,1,0,i,me1)) &
+                                            / aux(index_capa,i,j,k-1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j+1,k-1) = qnew(m,i,j+1,k-1) &
+                                            + (dtdy * gadd(m,2,-1,i,me1) &
+                                            -  dtdz * hadd(m,1,1,i,me1)) &
+                                            / aux(index_capa,i,j+1,k-1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j-1,k) = qnew(m,i,j-1,k) &
+                                            - (dtdy * gadd(m,1,0,i,me1) &
+                                            +  dtdz * ( hadd(m,2,-1,i,me1) &
+                                            -   hadd(m,1,-1,i,me1) )) &
+                                            / aux(index_capa,i,j-1,k)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,i,me1) &
+                                            - (dtdx * (fadd(m,i+1,me1) - fadd(m,i,me1)) &
+                                            +  dtdy * (gadd(m,2,0,i,me1) - gadd(m,1,0,i,me1)) &
+                                            +  dtdz * (hadd(m,2,0,i,me1) - hadd(m,1,0,i,me1))) &
+                                            / aux(index_capa,i,j,k)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j+1,k)   = qnew(m,i,j+1,k) &
+                                            + (dtdy * gadd(m,2,0,i,me1) &
+                                            - dtdz * ( hadd(m,2,1,i,me1) &
+                                            -   hadd(m,1,1,i,me1) )) &
+                                            / aux(index_capa,i,j+1,k)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j-1,k+1) = qnew(m,i,j-1,k+1) &
+                                            - (dtdy * gadd(m,1,1,i,me1) &
+                                            -  dtdz * hadd(m,2,-1,i,me1)) &
+                                            / aux(index_capa,i,j-1,k+1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
+                                            - (dtdy * ( gadd(m,2,1,i,me1) &
+                                            -   gadd(m,1,1,i,me1) ) &
+                                            -  dtdz * hadd(m,2,0,i,me1)) &
+                                            / aux(index_capa,i,j,k+1)
+                                    end do
+                                end do
+                                do i = 1, mx
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j+1,k+1) = qnew(m,i,j+1,k+1) &
+                                            + (dtdy * gadd(m,2,1,i,me1) &
+                                            +  dtdz * hadd(m,2,1,i,me1)) &
+                                            / aux(index_capa,i,j+1,k+1)
+                                    end do
+                                end do
+                            endif
 
-    !$omp do collapse(2) schedule(guided)
-    do 101 kblk = koffset, nblk_k-1, 2
-    do 101 iblk = ioffset, nblk_i-1, 2
+                        end do
+                    end do    ! End loops within block
 
-    do 100 k = kblk*blksiz_k, min((kblk+1)*blksiz_k-1, mz+1)
-        do 100 i = iblk*blksiz_i, min((iblk+1)*blksiz_i-1, mx+1)
-        
-            forall (m = 1:num_eqn, j = 1-num_ghost:my+num_ghost)
-        !                 # copy data along a slice into 1d array:
-            q1d(m,j,me1) = qold(m,i,j,k)
-            end forall
-        
-            if (index_capa > 0)  then
-                do 71 j = 1-num_ghost, my+num_ghost
-                    dtdy1d(j,me1) = dtdy / aux(index_capa,i,j,k)
-                71 END DO
-            endif
-        
-            if (num_aux > 0)  then
-            ! aux1, aux2, aux3 probably fit in cache, so optimize
-            ! access to aux
-                forall (ma=1:num_aux,ia= -1:1, j = 1-num_ghost:my+num_ghost)
-                aux1(ma, j, 2+ia, me1) = aux(ma, i+ia, j, k-1)
-                aux2(ma, j, 2+ia, me1) = aux(ma, i+ia, j,   k)
-                aux3(ma, j, 2+ia, me1) = aux(ma, i+ia, j, k+1)
-                end forall
-            endif
-        
-        !           # compute modifications fadd, gadd and hadd to fluxes along this
-        !           # slice:
-        
-            call flux3(2,maxm,num_eqn,num_waves,num_ghost,my, &
-            q1d(1,1-num_ghost,me1),dtdy1d(1-num_ghost,me1),dtdz,dtdx, &
-            aux1(1,1-num_ghost,1,me1),aux2(1,1-num_ghost,1,me1), &
-            aux3(1,1-num_ghost,1,me1),num_aux, &
-            method,mthlim,qadd(1,1-num_ghost,me1),fadd(1,1-num_ghost,me1), &
-            gadd(1,1,-1,1-num_ghost,me1),hadd(1,1,-1,1-num_ghost,me1),cfl1d, &
-            work(i0wave+me*nsiz_w),work(i0s+me*nsiz_s),work(i0amdq+me*nsiz), &
-            work(i0apdq+me*nsiz),work(i0cqxx+me*nsiz), &
-            work(i0bmamdq+me*nsiz),work(i0bmapdq+me*nsiz), &
-            work(i0bpamdq+me*nsiz),work(i0bpapdq+me*nsiz), &
-            work(i0cmamdq+me*nsiz),work(i0cmapdq+me*nsiz), &
-            work(i0cpamdq+me*nsiz),work(i0cpapdq+me*nsiz), &
-            work(i0cmamdq2+me*nsiz),work(i0cmapdq2+me*nsiz), &
-            work(i0cpamdq2+me*nsiz),work(i0cpapdq2+me*nsiz), &
-            work(i0bmcqxxp+me*nsiz),work(i0bpcqxxp+me*nsiz), &
-            work(i0bmcqxxm+me*nsiz),work(i0bpcqxxm+me*nsiz), &
-            work(i0cmcqxxp+me*nsiz),work(i0cpcqxxp+me*nsiz), &
-            work(i0cmcqxxm+me*nsiz),work(i0cpcqxxm+me*nsiz), &
-            work(i0bmcmamdq+me*nsiz),work(i0bmcmapdq+me*nsiz), &
-            work(i0bpcmamdq+me*nsiz),work(i0bpcmapdq+me*nsiz), &
-            work(i0bmcpamdq+me*nsiz),work(i0bmcpapdq+me*nsiz), &
-            work(i0bpcpamdq+me*nsiz),work(i0bpcpapdq+me*nsiz), &
-            rpn3,rpt3,rptt3,use_fwave)
-        
-            cfl = dmax1(cfl,cfl1d)
-        
-        !           # update qnew by flux differencing.
-        !           # Note that the roles of the flux updates are changed.
-        !           # fadd - modifies the g-fluxes
-        !           # gadd - modifies the h-fluxes
-        !           # hadd - modifies the f-fluxes
-        
-            if( index_capa == 0)then
-            !               # no capa array.  Standard flux differencing:
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,j,me1) &
-                - dtdy * (fadd(m,j+1,me1) - fadd(m,j,me1)) &
-                - dtdz * (gadd(m,2,0,j,me1) - gadd(m,1,0,j,me1)) &
-                - dtdx * (hadd(m,2,0,j,me1) - hadd(m,1,0,j,me1))
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
-                + dtdz * gadd(m,2,0,j,me1) &
-                - dtdx * ( hadd(m,2,1,j,me1) &
-                -   hadd(m,1,1,j,me1) )
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i+1,j,k+1) = qnew(m,i+1,j,k+1) &
-                + dtdz * gadd(m,2,1,j,me1) &
-                +  dtdx * hadd(m,2,1,j,me1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i+1,j,k)   = qnew(m,i+1,j,k) &
-                - dtdz * ( gadd(m,2,1,j,me1) &
-                -   gadd(m,1,1,j,me1) ) &
-                + dtdx * hadd(m,2,0,j,me1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i+1,j,k-1) = qnew(m,i+1,j,k-1) &
-                - dtdz * gadd(m,1,1,j,me1) &
-                + dtdx * hadd(m,2,-1,j,me1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i,j,k-1)   = qnew(m,i,j,k-1) &
-                - dtdz * gadd(m,1,0,j,me1) &
-                - dtdx * ( hadd(m,2,-1,j,me1) &
-                -   hadd(m,1,-1,j,me1) )
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i-1,j,k-1) = qnew(m,i-1,j,k-1) &
-                - dtdz * gadd(m,1,-1,j,me1) &
-                - dtdx * hadd(m,1,-1,j,me1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
-                - dtdz * ( gadd(m,2,-1,j,me1) &
-                -   gadd(m,1,-1,j,me1) ) &
-                - dtdx * hadd(m,1,0,j,me1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i-1,j,k+1) = qnew(m,i-1,j,k+1) &
-                + dtdz * gadd(m,2,-1,j,me1) &
-                -  dtdx*hadd(m,1,1,j,me1)
-                end forall
-            else
-            
-            !              #with capa array.
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,j,me1) &
-                - (dtdy * (fadd(m,j+1,me1) - fadd(m,j,me1)) &
-                +  dtdz * (gadd(m,2,0,j,me1) - gadd(m,1,0,j,me1)) &
-                +  dtdx * (hadd(m,2,0,j,me1) - hadd(m,1,0,j,me1))) &
-                / aux(index_capa,i,j,k)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i,j,k+1)   = qnew(m,i,j,k+1) &
-                + (dtdz * gadd(m,2,0,j,me1) &
-                -  dtdx * ( hadd(m,2,1,j,me1) &
-                -   hadd(m,1,1,j,me1) )) &
-                / aux(index_capa,i,j,k+1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i+1,j,k+1) = qnew(m,i+1,j,k+1) &
-                + (dtdz * gadd(m,2,1,j,me1) &
-                +  dtdx * hadd(m,2,1,j,me1)) &
-                / aux(index_capa,i+1,j,k+1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i+1,j,k)   = qnew(m,i+1,j,k) &
-                - (dtdz * ( gadd(m,2,1,j,me1) &
-                -   gadd(m,1,1,j,me1) ) &
-                -  dtdx * hadd(m,2,0,j,me1) ) &
-                / aux(index_capa,i+1,j,k)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i+1,j,k-1) = qnew(m,i+1,j,k-1) &
-                - (dtdz * gadd(m,1,1,j,me1) &
-                -  dtdx * hadd(m,2,-1,j,me1)) &
-                / aux(index_capa,i+1,j,k-1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i,j,k-1)   = qnew(m,i,j,k-1) &
-                - (dtdz * gadd(m,1,0,j,me1) &
-                +  dtdx * ( hadd(m,2,-1,j,me1) &
-                -   hadd(m,1,-1,j,me1) )) &
-                / aux(index_capa,i,j,k-1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i-1,j,k-1) = qnew(m,i-1,j,k-1) &
-                - (dtdz * gadd(m,1,-1,j,me1) &
-                +  dtdx * hadd(m,1,-1,j,me1)) &
-                / aux(index_capa,i-1,j,k-1)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
-                - (dtdz * ( gadd(m,2,-1,j,me1) &
-                -   gadd(m,1,-1,j,me1) ) &
-                +  dtdx * hadd(m,1,0,j,me1)) &
-                / aux(index_capa,i-1,j,k)
-                end forall
-                forall (m = 1:num_eqn, j = 1:my)
-                qnew(m,i-1,j,k+1) = qnew(m,i-1,j,k+1) &
-                + (dtdz * gadd(m,2,-1,j,me1) &
-                -  dtdx*hadd(m,1,1,j,me1)) &
-                / aux(index_capa,i-1,j,k+1)
-                end forall
-            endif
+                end do
+            end do    ! End loops over blocks
 
-        
-    100 END DO
+            ! Flush memory (may not be necessary), then make sure everybody
+            ! synchronizes before the next offset
 
-    101 end do
-
-    !$omp flush
-    !$omp barrier
-    102 end do
+            !$omp flush
+            !$omp barrier
+        end do
+    end do    ! End loops over offsets
 
 
-!     # perform z sweeps
-!     ==================
+    ! perform y sweeps
+    !==================
+
+    do koffset=0,1
+        do ioffset=0,1
+
+            !$omp do collapse(2) schedule(guided)
+            do kblk = koffset, nblk_k-1, 2
+                do iblk = ioffset, nblk_i-1, 2
+
+                    do k = kblk*blksiz_k, min((kblk+1)*blksiz_k-1, mz+1)
+                        do i = iblk*blksiz_i, min((iblk+1)*blksiz_i-1, mx+1)
+
+                            ! copy data along a slice into 1d array:
+                            do j = 1-num_ghost, my+num_ghost
+                                do m = 1, num_eqn
+                                    q1d(m,j,me1) = qold(m,i,j,k)
+                                end do
+                            end do
+
+                            if (index_capa > 0)  then
+                                do j = 1-num_ghost, my+num_ghost
+                                    dtdy1d(j,me1) = dtdy / aux(index_capa,i,j,k)
+                                end do
+                            endif
+
+                            if (num_aux > 0)  then
+                                ! aux1, aux2, aux3 probably fit in cache, so optimize
+                                ! access to aux
+                                do j = 1-num_ghost, my+num_ghost
+                                    do ia = -1, 1
+                                        do ma = 1, num_aux
+                                            aux1(ma, j, 2+ia, me1) = aux(ma, i+ia, j, k-1)
+                                        end do
+                                    end do
+                                end do
+                                do j = 1-num_ghost, my+num_ghost
+                                    do ia = -1, 1
+                                        do ma = 1, num_aux
+                                            aux2(ma, j, 2+ia, me1) = aux(ma, i+ia, j,   k)
+                                        end do
+                                    end do
+                                end do
+                                do j = 1-num_ghost, my+num_ghost
+                                    do ia = -1, 1
+                                        do ma = 1, num_aux
+                                            aux3(ma, j, 2+ia, me1) = aux(ma, i+ia, j, k+1)
+                                        end do
+                                    end do
+                                end do
+                            endif
+
+                            ! compute modifications fadd, gadd and hadd to fluxes along this
+                            ! slice:
+
+                            call flux3(2,maxm,num_eqn,num_waves,num_ghost,my, &
+                                q1d(1,1-num_ghost,me1),dtdy1d(1-num_ghost,me1),dtdz,dtdx, &
+                                aux1(1,1-num_ghost,1,me1),aux2(1,1-num_ghost,1,me1), &
+                                aux3(1,1-num_ghost,1,me1),num_aux, &
+                                method,mthlim,qadd(1,1-num_ghost,me1),fadd(1,1-num_ghost,me1), &
+                                gadd(1,1,-1,1-num_ghost,me1),hadd(1,1,-1,1-num_ghost,me1),cfl1d, &
+                                work(i0wave+me*nsiz_w),work(i0s+me*nsiz_s),work(i0amdq+me*nsiz), &
+                                work(i0apdq+me*nsiz),work(i0cqxx+me*nsiz), &
+                                work(i0bmamdq+me*nsiz),work(i0bmapdq+me*nsiz), &
+                                work(i0bpamdq+me*nsiz),work(i0bpapdq+me*nsiz), &
+                                work(i0cmamdq+me*nsiz),work(i0cmapdq+me*nsiz), &
+                                work(i0cpamdq+me*nsiz),work(i0cpapdq+me*nsiz), &
+                                work(i0cmamdq2+me*nsiz),work(i0cmapdq2+me*nsiz), &
+                                work(i0cpamdq2+me*nsiz),work(i0cpapdq2+me*nsiz), &
+                                work(i0bmcqxxp+me*nsiz),work(i0bpcqxxp+me*nsiz), &
+                                work(i0bmcqxxm+me*nsiz),work(i0bpcqxxm+me*nsiz), &
+                                work(i0cmcqxxp+me*nsiz),work(i0cpcqxxp+me*nsiz), &
+                                work(i0cmcqxxm+me*nsiz),work(i0cpcqxxm+me*nsiz), &
+                                work(i0bmcmamdq+me*nsiz),work(i0bmcmapdq+me*nsiz), &
+                                work(i0bpcmamdq+me*nsiz),work(i0bpcmapdq+me*nsiz), &
+                                work(i0bmcpamdq+me*nsiz),work(i0bmcpapdq+me*nsiz), &
+                                work(i0bpcpamdq+me*nsiz),work(i0bpcpapdq+me*nsiz), &
+                                rpn3,rpt3,rptt3,use_fwave)
+
+                            cfl = dmax1(cfl,cfl1d)
+
+                            ! update qnew by flux differencing.
+                            ! Note that the roles of the flux updates are changed.
+                            ! fadd - modifies the g-fluxes
+                            ! gadd - modifies the h-fluxes
+                            ! hadd - modifies the f-fluxes
+
+                            if( index_capa == 0)then
+                                ! no capa array.  Standard flux differencing:
+                                do j = 1, my
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j,k-1) = qnew(m,i-1,j,k-1) &
+                                            - dtdz * gadd(m,1,-1,j,me1) &
+                                            - dtdx * hadd(m,1,-1,j,me1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k-1) = qnew(m,i,j,k-1) &
+                                            - dtdz * gadd(m,1,0,j,me1) &
+                                            - dtdx * ( hadd(m,2,-1,j,me1) &
+                                            -   hadd(m,1,-1,j,me1) )
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j,k-1) = qnew(m,i+1,j,k-1) &
+                                            - dtdz * gadd(m,1,1,j,me1) &
+                                            + dtdx * hadd(m,2,-1,j,me1)
+                                    end do
+                                end do
+                                do j = 1, my
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j,k) = qnew(m,i-1,j,k) &
+                                            - dtdz * ( gadd(m,2,-1,j,me1) &
+                                            -   gadd(m,1,-1,j,me1) ) &
+                                            - dtdx * hadd(m,1,0,j,me1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,j,me1) &
+                                            - dtdy * (fadd(m,j+1,me1) - fadd(m,j,me1)) &
+                                            - dtdz * (gadd(m,2,0,j,me1) - gadd(m,1,0,j,me1)) &
+                                            - dtdx * (hadd(m,2,0,j,me1) - hadd(m,1,0,j,me1))
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j,k) = qnew(m,i+1,j,k) &
+                                            - dtdz * ( gadd(m,2,1,j,me1) &
+                                            -   gadd(m,1,1,j,me1) ) &
+                                            + dtdx * hadd(m,2,0,j,me1)
+                                    end do
+                                end do
+                                do j = 1, my
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j,k+1) = qnew(m,i-1,j,k+1) &
+                                            + dtdz * gadd(m,2,-1,j,me1) &
+                                            -  dtdx*hadd(m,1,1,j,me1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k+1) = qnew(m,i,j,k+1) &
+                                            + dtdz * gadd(m,2,0,j,me1) &
+                                            - dtdx * ( hadd(m,2,1,j,me1) &
+                                            -   hadd(m,1,1,j,me1) )
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j,k+1) = qnew(m,i+1,j,k+1) &
+                                            + dtdz * gadd(m,2,1,j,me1) &
+                                            +  dtdx * hadd(m,2,1,j,me1)
+                                    end do
+                                end do
+                            else
+                                ! with capa array.
+                                do j = 1, my
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j,k-1) = qnew(m,i-1,j,k-1) &
+                                            - (dtdz * gadd(m,1,-1,j,me1) &
+                                            +  dtdx * hadd(m,1,-1,j,me1)) &
+                                            / aux(index_capa,i-1,j,k-1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k-1) = qnew(m,i,j,k-1) &
+                                            - (dtdz * gadd(m,1,0,j,me1) &
+                                            +  dtdx * ( hadd(m,2,-1,j,me1) &
+                                            -   hadd(m,1,-1,j,me1) )) &
+                                            / aux(index_capa,i,j,k-1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j,k-1) = qnew(m,i+1,j,k-1) &
+                                            - (dtdz * gadd(m,1,1,j,me1) &
+                                            -  dtdx * hadd(m,2,-1,j,me1)) &
+                                            / aux(index_capa,i+1,j,k-1)
+                                    end do
+                                end do
+                                do j = 1, my
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j,k) = qnew(m,i-1,j,k) &
+                                            - (dtdz * ( gadd(m,2,-1,j,me1) &
+                                            -   gadd(m,1,-1,j,me1) ) &
+                                            +  dtdx * hadd(m,1,0,j,me1)) &
+                                            / aux(index_capa,i-1,j,k)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,j,me1) &
+                                            - (dtdy * (fadd(m,j+1,me1) - fadd(m,j,me1)) &
+                                            +  dtdz * (gadd(m,2,0,j,me1) - gadd(m,1,0,j,me1)) &
+                                            +  dtdx * (hadd(m,2,0,j,me1) - hadd(m,1,0,j,me1))) &
+                                            / aux(index_capa,i,j,k)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j,k) = qnew(m,i+1,j,k) &
+                                            - (dtdz * ( gadd(m,2,1,j,me1) &
+                                            -   gadd(m,1,1,j,me1) ) &
+                                            -  dtdx * hadd(m,2,0,j,me1) ) &
+                                            / aux(index_capa,i+1,j,k)
+                                    end do
+                                end do
+                                do j = 1, my
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j,k+1) = qnew(m,i-1,j,k+1) &
+                                            + (dtdz * gadd(m,2,-1,j,me1) &
+                                            -  dtdx*hadd(m,1,1,j,me1)) &
+                                            / aux(index_capa,i-1,j,k+1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k+1) = qnew(m,i,j,k+1) &
+                                            + (dtdz * gadd(m,2,0,j,me1) &
+                                            -  dtdx * ( hadd(m,2,1,j,me1) &
+                                            -   hadd(m,1,1,j,me1) )) &
+                                            / aux(index_capa,i,j,k+1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j,k+1) = qnew(m,i+1,j,k+1) &
+                                            + (dtdz * gadd(m,2,1,j,me1) &
+                                            +  dtdx * hadd(m,2,1,j,me1)) &
+                                            / aux(index_capa,i+1,j,k+1)
+                                    end do
+                                end do
+                            endif
+
+                        end do
+                    end do    ! End loops within blocks
+
+                end do
+            end do    ! End loops over blocks
+
+            !$omp flush
+            !$omp barrier
+        end do
+    end do    ! End loops over offsets
 
 
-    do 152 joffset=0,1
-    do 152 ioffset=0,1
+    ! perform z sweeps
+    !==================
 
-    !$omp do collapse(2) schedule(guided)
-    do 151 jblk = joffset, nblk_j-1, 2
-    do 151 iblk = ioffset, nblk_i-1, 2
+    do joffset=0,1
+        do ioffset=0,1
 
-    do 150 j = jblk*blksiz_j, min((jblk+1)*blksiz_j-1, my+1)
-        do 150 i = iblk*blksiz_i, min((iblk+1)*blksiz_i-1, mx+1)
+            !$omp do collapse(2) schedule(guided)
+            do jblk = joffset, nblk_j-1, 2
+                do iblk = ioffset, nblk_i-1, 2
 
-            forall (m = 1:num_eqn, k = 1-num_ghost:mz+num_ghost)
-        !                 # copy data along a slice into 1d array:
-            q1d(m,k,me1) = qold(m,i,j,k)
-            end forall
-        
-            if (index_capa > 0)  then
-                do 130 k = 1-num_ghost, mz+num_ghost
-                    dtdz1d(k,me1) = dtdz / aux(index_capa,i,j,k)
-                130 END DO
-            endif
-        
-            if (num_aux > 0)  then
-            ! See the comment on the X sweeps.  This is semantically
-            ! slightly different than putting all the indices in the
-            ! same forall, and hopefully better for optimizing access
-            ! to aux.
-                forall (ja = -1:1, k = 1-num_ghost:mz+num_ghost)
-                forall (ma = 1:num_aux)
-                aux1(ma, k, 2+ja, me1) = aux(ma, i-1, j+ja, k)
-                aux2(ma, k, 2+ja, me1) = aux(ma,   i, j+ja, k)
-                aux3(ma, k, 2+ja, me1) = aux(ma, i+1, j+ja, k)
-                end forall
-                end forall
-            endif
-        
-        !           # compute modifications fadd, gadd and hadd to fluxes along this
-        !           # slice:
-        
-            call flux3(3,maxm,num_eqn,num_waves,num_ghost,mz, &
-            q1d(1,1-num_ghost,me1),dtdz1d(1-num_ghost,me1),dtdx,dtdy, &
-            aux1(1,1-num_ghost,1,me1),aux2(1,1-num_ghost,1,me1), &
-            aux3(1,1-num_ghost,1,me1),num_aux, &
-            method,mthlim,qadd(1,1-num_ghost,me1),fadd(1,1-num_ghost,me1), &
-            gadd(1,1,-1,1-num_ghost,me1),hadd(1,1,-1,1-num_ghost,me1),cfl1d, &
-            work(i0wave+me*nsiz_w),work(i0s+me*nsiz_s),work(i0amdq+me*nsiz), &
-            work(i0apdq+me*nsiz),work(i0cqxx+me*nsiz), &
-            work(i0bmamdq+me*nsiz),work(i0bmapdq+me*nsiz), &
-            work(i0bpamdq+me*nsiz),work(i0bpapdq+me*nsiz), &
-            work(i0cmamdq+me*nsiz),work(i0cmapdq+me*nsiz), &
-            work(i0cpamdq+me*nsiz),work(i0cpapdq+me*nsiz), &
-            work(i0cmamdq2+me*nsiz),work(i0cmapdq2+me*nsiz), &
-            work(i0cpamdq2+me*nsiz),work(i0cpapdq2+me*nsiz), &
-            work(i0bmcqxxp+me*nsiz),work(i0bpcqxxp+me*nsiz), &
-            work(i0bmcqxxm+me*nsiz),work(i0bpcqxxm+me*nsiz), &
-            work(i0cmcqxxp+me*nsiz),work(i0cpcqxxp+me*nsiz), &
-            work(i0cmcqxxm+me*nsiz),work(i0cpcqxxm+me*nsiz), &
-            work(i0bmcmamdq+me*nsiz),work(i0bmcmapdq+me*nsiz), &
-            work(i0bpcmamdq+me*nsiz),work(i0bpcmapdq+me*nsiz), &
-            work(i0bmcpamdq+me*nsiz),work(i0bmcpapdq+me*nsiz), &
-            work(i0bpcpamdq+me*nsiz),work(i0bpcpapdq+me*nsiz), &
-            rpn3,rpt3,rptt3,use_fwave)
-        
-            cfl = dmax1(cfl,cfl1d)
-        
-        !           # update qnew by flux differencing.
-        !           # Note that the roles of the flux updates are changed.
-        !           # fadd - modifies the h-fluxes
-        !           # gadd - modifies the f-fluxes
-        !           # hadd - modifies the g-fluxes
-        
-            if(index_capa == 0)then
-            
-            !              #no capa array. Standard flux differencing:
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,k,me1) &
-                - dtdz * (fadd(m,k+1,me1) - fadd(m,k,me1)) &
-                - dtdx * (gadd(m,2,0,k,me1) - gadd(m,1,0,k,me1)) &
-                - dtdy * (hadd(m,2,0,k,me1) - hadd(m,1,0,k,me1))
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i,j+1,k)   = qnew(m,i,j+1,k) &
-                - dtdx * ( gadd(m,2,1,k,me1) &
-                -   gadd(m,1,1,k,me1) ) &
-                + dtdy * hadd(m,2,0,k,me1)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i+1,j+1,k) = qnew(m,i+1,j+1,k) &
-                + dtdx * gadd(m,2,1,k,me1) &
-                + dtdy * hadd(m,2,1,k,me1)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i+1,j,k)   = qnew(m,i+1,j,k) &
-                + dtdx * gadd(m,2,0,k,me1) &
-                - dtdy * ( hadd(m,2,1,k,me1) &
-                -   hadd(m,1,1,k,me1) )
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i+1,j-1,k) = qnew(m,i+1,j-1,k) &
-                + dtdx * gadd(m,2,-1,k,me1) &
-                - dtdy * hadd(m,1,1,k,me1)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i,j-1,k)   = qnew(m,i,j-1,k) &
-                - dtdx * ( gadd(m,2,-1,k,me1) &
-                -   gadd(m,1,-1,k,me1) ) &
-                - dtdy * hadd(m,1,0,k,me1)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i-1,j-1,k) = qnew(m,i-1,j-1,k) &
-                - dtdx * gadd(m,1,-1,k,me1) &
-                - dtdy * hadd(m,1,-1,k,me1)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
-                - dtdx * gadd(m,1,0,k,me1) &
-                - dtdy * ( hadd(m,2,-1,k,me1) &
-                -   hadd(m,1,-1,k,me1) )
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i-1,j+1,k) = qnew(m,i-1,j+1,k) &
-                - dtdx * gadd(m,1,1,k,me1) &
-                + dtdy * hadd(m,2,-1,k,me1)
-                end forall
-            else
-            
-            !              # with capa array
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,k,me1) &
-                - (dtdz * (fadd(m,k+1,me1) - fadd(m,k,me1)) &
-                +  dtdx * (gadd(m,2,0,k,me1) - gadd(m,1,0,k,me1)) &
-                +  dtdy * (hadd(m,2,0,k,me1) - hadd(m,1,0,k,me1))) &
-                / aux(index_capa,i,j,k)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i,j+1,k) = qnew(m,i,j+1,k) &
-                - (dtdx * ( gadd(m,2,1,k,me1) &
-                -   gadd(m,1,1,k,me1) ) &
-                -  dtdy * hadd(m,2,0,k,me1)) &
-                / aux(index_capa,i,j+1,k)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i+1,j+1,k) = qnew(m,i+1,j+1,k) &
-                + (dtdx * gadd(m,2,1,k,me1) &
-                +  dtdy * hadd(m,2,1,k,me1)) &
-                / aux(index_capa,i+1,j+1,k)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i+1,j,k)   = qnew(m,i+1,j,k) &
-                + (dtdx * gadd(m,2,0,k,me1) &
-                - dtdy * ( hadd(m,2,1,k,me1) &
-                -   hadd(m,1,1,k,me1) )) &
-                / aux(index_capa,i+1,j,k)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i+1,j-1,k) = qnew(m,i+1,j-1,k) &
-                + (dtdx * gadd(m,2,-1,k,me1) &
-                -  dtdy * hadd(m,1,1,k,me1)) &
-                / aux(index_capa,i+1,j-1,k)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i,j-1,k)   = qnew(m,i,j-1,k) &
-                - (dtdx * ( gadd(m,2,-1,k,me1) &
-                -   gadd(m,1,-1,k,me1) ) &
-                +  dtdy * hadd(m,1,0,k,me1)) &
-                / aux(index_capa,i,j-1,k)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i-1,j-1,k) = qnew(m,i-1,j-1,k) &
-                - (dtdx * gadd(m,1,-1,k,me1) &
-                +  dtdy * hadd(m,1,-1,k,me1)) &
-                / aux(index_capa,i-1,j-1,k)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
-                - (dtdx * gadd(m,1,0,k,me1) &
-                + dtdy * ( hadd(m,2,-1,k,me1) &
-                -   hadd(m,1,-1,k,me1) )) &
-                / aux(index_capa,i-1,j,k)
-                end forall
-                forall (m = 1:num_eqn, k = 1:mz)
-                qnew(m,i-1,j+1,k) = qnew(m,i-1,j+1,k) &
-                - (dtdx * gadd(m,1,1,k,me1) &
-                -  dtdy * hadd(m,2,-1,k,me1)) &
-                / aux(index_capa,i-1,j+1,k)
-                end forall
-            endif
+                    do j = jblk*blksiz_j, min((jblk+1)*blksiz_j-1, my+1)
+                        do i = iblk*blksiz_i, min((iblk+1)*blksiz_i-1, mx+1)
 
-    150 END DO
+                            do k = 1-num_ghost, mz+num_ghost
+                                do m = 1, num_eqn
+                                    q1d(m,k,me1) = qold(m,i,j,k)
+                                end do
+                            end do
 
-    151 end do
+                            if (index_capa > 0)  then
+                                do k = 1-num_ghost, mz+num_ghost
+                                    dtdz1d(k,me1) = dtdz / aux(index_capa,i,j,k)
+                                end do
+                            endif
 
-    !$omp flush
-    !$omp barrier
-    152 end do
+                            if (num_aux > 0)  then
+                                do k = 1-num_ghost, mz+num_ghost
+                                    do ja = -1, 1
+                                        do ma = 1, num_aux
+                                            aux1(ma, k, 2+ja, me1) = aux(ma, i-1, j+ja, k)
+                                        end do
+                                        do ma = 1, num_aux
+                                            aux2(ma, k, 2+ja, me1) = aux(ma,   i, j+ja, k)
+                                        end do
+                                        do ma = 1, num_aux
+                                            aux3(ma, k, 2+ja, me1) = aux(ma, i+1, j+ja, k)
+                                        end do
+                                    end do
+                                end do
+                            endif
+
+                            ! compute modifications fadd, gadd and hadd to fluxes along this
+                            ! slice:
+
+                            call flux3(3,maxm,num_eqn,num_waves,num_ghost,mz, &
+                                q1d(1,1-num_ghost,me1),dtdz1d(1-num_ghost,me1),dtdx,dtdy, &
+                                aux1(1,1-num_ghost,1,me1),aux2(1,1-num_ghost,1,me1), &
+                                aux3(1,1-num_ghost,1,me1),num_aux, &
+                                method,mthlim,qadd(1,1-num_ghost,me1),fadd(1,1-num_ghost,me1), &
+                                gadd(1,1,-1,1-num_ghost,me1),hadd(1,1,-1,1-num_ghost,me1),cfl1d, &
+                                work(i0wave+me*nsiz_w),work(i0s+me*nsiz_s),work(i0amdq+me*nsiz), &
+                                work(i0apdq+me*nsiz),work(i0cqxx+me*nsiz), &
+                                work(i0bmamdq+me*nsiz),work(i0bmapdq+me*nsiz), &
+                                work(i0bpamdq+me*nsiz),work(i0bpapdq+me*nsiz), &
+                                work(i0cmamdq+me*nsiz),work(i0cmapdq+me*nsiz), &
+                                work(i0cpamdq+me*nsiz),work(i0cpapdq+me*nsiz), &
+                                work(i0cmamdq2+me*nsiz),work(i0cmapdq2+me*nsiz), &
+                                work(i0cpamdq2+me*nsiz),work(i0cpapdq2+me*nsiz), &
+                                work(i0bmcqxxp+me*nsiz),work(i0bpcqxxp+me*nsiz), &
+                                work(i0bmcqxxm+me*nsiz),work(i0bpcqxxm+me*nsiz), &
+                                work(i0cmcqxxp+me*nsiz),work(i0cpcqxxp+me*nsiz), &
+                                work(i0cmcqxxm+me*nsiz),work(i0cpcqxxm+me*nsiz), &
+                                work(i0bmcmamdq+me*nsiz),work(i0bmcmapdq+me*nsiz), &
+                                work(i0bpcmamdq+me*nsiz),work(i0bpcmapdq+me*nsiz), &
+                                work(i0bmcpamdq+me*nsiz),work(i0bmcpapdq+me*nsiz), &
+                                work(i0bpcpamdq+me*nsiz),work(i0bpcpapdq+me*nsiz), &
+                                rpn3,rpt3,rptt3,use_fwave)
+
+                            cfl = dmax1(cfl,cfl1d)
+
+                            ! update qnew by flux differencing.
+                            ! Note that the roles of the flux updates are changed.
+                            ! fadd - modifies the h-fluxes
+                            ! gadd - modifies the f-fluxes
+                            ! hadd - modifies the g-fluxes
+
+                            if(index_capa == 0)then
+
+                                ! no capa array. Standard flux differencing:
+                                do k = 1, mz
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j-1,k) = qnew(m,i-1,j-1,k) &
+                                            - dtdx * gadd(m,1,-1,k,me1) &
+                                            - dtdy * hadd(m,1,-1,k,me1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j-1,k) = qnew(m,i,j-1,k) &
+                                            - dtdx * ( gadd(m,2,-1,k,me1) &
+                                            -   gadd(m,1,-1,k,me1) ) &
+                                            - dtdy * hadd(m,1,0,k,me1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j-1,k) = qnew(m,i+1,j-1,k) &
+                                            + dtdx * gadd(m,2,-1,k,me1) &
+                                            - dtdy * hadd(m,1,1,k,me1)
+                                    end do
+
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j,k) = qnew(m,i-1,j,k) &
+                                            - dtdx * gadd(m,1,0,k,me1) &
+                                            - dtdy * ( hadd(m,2,-1,k,me1) &
+                                            -   hadd(m,1,-1,k,me1) )
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,k,me1) &
+                                            - dtdz * (fadd(m,k+1,me1) - fadd(m,k,me1)) &
+                                            - dtdx * (gadd(m,2,0,k,me1) - gadd(m,1,0,k,me1)) &
+                                            - dtdy * (hadd(m,2,0,k,me1) - hadd(m,1,0,k,me1))
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j,k) = qnew(m,i+1,j,k) &
+                                            + dtdx * gadd(m,2,0,k,me1) &
+                                            - dtdy * ( hadd(m,2,1,k,me1) &
+                                            -   hadd(m,1,1,k,me1) )
+                                    end do
+
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j+1,k) = qnew(m,i-1,j+1,k) &
+                                            - dtdx * gadd(m,1,1,k,me1) &
+                                            + dtdy * hadd(m,2,-1,k,me1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j+1,k) = qnew(m,i,j+1,k) &
+                                            - dtdx * ( gadd(m,2,1,k,me1) &
+                                            -   gadd(m,1,1,k,me1) ) &
+                                            + dtdy * hadd(m,2,0,k,me1)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j+1,k) = qnew(m,i+1,j+1,k) &
+                                            + dtdx * gadd(m,2,1,k,me1) &
+                                            + dtdy * hadd(m,2,1,k,me1)
+                                    end do
+                                end do
+                            else
+
+                                ! with capa array
+                                do k = 1, mz
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j-1,k) = qnew(m,i-1,j-1,k) &
+                                            - (dtdx * gadd(m,1,-1,k,me1) &
+                                            +  dtdy * hadd(m,1,-1,k,me1)) &
+                                            / aux(index_capa,i-1,j-1,k)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j-1,k) = qnew(m,i,j-1,k) &
+                                            - (dtdx * ( gadd(m,2,-1,k,me1) &
+                                            -   gadd(m,1,-1,k,me1) ) &
+                                            +  dtdy * hadd(m,1,0,k,me1)) &
+                                            / aux(index_capa,i,j-1,k)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j-1,k) = qnew(m,i+1,j-1,k) &
+                                            + (dtdx * gadd(m,2,-1,k,me1) &
+                                            -  dtdy * hadd(m,1,1,k,me1)) &
+                                            / aux(index_capa,i+1,j-1,k)
+                                    end do
+
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j,k)   = qnew(m,i-1,j,k) &
+                                            - (dtdx * gadd(m,1,0,k,me1) &
+                                            + dtdy * ( hadd(m,2,-1,k,me1) &
+                                            -   hadd(m,1,-1,k,me1) )) &
+                                            / aux(index_capa,i-1,j,k)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j,k) = qnew(m,i,j,k) + qadd(m,k,me1) &
+                                            - (dtdz * (fadd(m,k+1,me1) - fadd(m,k,me1)) &
+                                            +  dtdx * (gadd(m,2,0,k,me1) - gadd(m,1,0,k,me1)) &
+                                            +  dtdy * (hadd(m,2,0,k,me1) - hadd(m,1,0,k,me1))) &
+                                            / aux(index_capa,i,j,k)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j,k) = qnew(m,i+1,j,k) &
+                                            + (dtdx * gadd(m,2,0,k,me1) &
+                                            - dtdy * ( hadd(m,2,1,k,me1) &
+                                            -   hadd(m,1,1,k,me1) )) &
+                                            / aux(index_capa,i+1,j,k)
+                                    end do
+
+                                    do m = 1, num_eqn
+                                        qnew(m,i-1,j+1,k) = qnew(m,i-1,j+1,k) &
+                                            - (dtdx * gadd(m,1,1,k,me1) &
+                                            -  dtdy * hadd(m,2,-1,k,me1)) &
+                                            / aux(index_capa,i-1,j+1,k)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i,j+1,k) = qnew(m,i,j+1,k) &
+                                            - (dtdx * ( gadd(m,2,1,k,me1) &
+                                            -   gadd(m,1,1,k,me1) ) &
+                                            -  dtdy * hadd(m,2,0,k,me1)) &
+                                            / aux(index_capa,i,j+1,k)
+                                    end do
+                                    do m = 1, num_eqn
+                                        qnew(m,i+1,j+1,k) = qnew(m,i+1,j+1,k) &
+                                            + (dtdx * gadd(m,2,1,k,me1) &
+                                            +  dtdy * hadd(m,2,1,k,me1)) &
+                                            / aux(index_capa,i+1,j+1,k)
+                                    end do
+                                end do
+                            endif
+
+                        end do
+                    end do
+
+                end do
+            end do
+
+            !$omp flush
+            !$omp barrier
+        end do
+    end do
     !$omp end parallel
 
     return
 
-    end subroutine step3
-
-
+end subroutine step3
