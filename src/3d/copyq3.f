@@ -13,6 +13,7 @@ c
      &             1-mbc:mz+mbc)
 c
 c
+      !$OMP parallel do collapse(4)
       do 10 k = 1-mbc, mz+mbc
          do 10 j = 1-mbc, my+mbc
             do 10 i = 1-mbc, mx+mbc

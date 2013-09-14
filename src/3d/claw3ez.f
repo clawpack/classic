@@ -16,7 +16,12 @@ c     format.  Allocation of all the large arrays (aux, q, work) is
 c     delayed until the last possible moment in case any of the user
 c     code called before them is a memory hog.
 c
+
       implicit double precision (a-h,o-z)
+
+c     F77 way to get OpenMP function declarations
+c$    include 'omp_lib.h'
+
       external bc3,rpn3,rpt3,rptt3,src3,b4step3
 
       double precision, dimension(:,:,:,:), allocatable :: q, aux
@@ -193,8 +198,15 @@ c
         endif
 
       maxm = max0(mx, my, mz)
+      nthreads=1    ! Serial
+c$omp parallel
+c$omp single
+c$    nthreads = omp_get_num_threads()
+c$    maxthreads = omp_get_max_threads()
+c$omp end single
+c$omp end parallel
       mwork = (maxm+2*mbc)*(46*meqn + mwaves + meqn*mwaves
-     &                     + 9*maux + 3)
+     &                     + 9*maux + 3)*nthreads
      &         + narray * (mx + 2*mbc) * (my + 2*mbc)
      &                  * (mz + 2*mbc) * meqn
 
@@ -284,7 +296,8 @@ c        # output initial data
       ! Allocate work array
       allocate(work(mwork), stat=allocate_status)
       if (allocate_status .ne. 0) then
-         print *, '*** Error allocating work array; exiting claw3ez'
+         print *, '*** Error (nthreads=',nthreads,
+     &        ') allocating work array; exiting claw3ez'
          go to 900
       end if
 

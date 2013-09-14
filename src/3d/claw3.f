@@ -608,6 +608,10 @@ c    Beginning of claw3 code
 c    ======================================================================
 c
       implicit real*8(a-h,o-z)
+
+c     F77 way to get OpenMP function declarations
+c$    include 'omp_lib.h'
+
       external bc3,rpn3,rpt3, rptt3
       dimension     q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc,
      &                1-mbc:mz+mbc)
@@ -675,10 +679,17 @@ c
           narray = 1   !# no source terms -- only need one qwork array
         else
           narray = 2           !# need two qwork arrays
-        endif
+       endif
 c
-      mwork0 = (maxm+2*mbc)*(46*meqn + mwaves + meqn*mwaves
-     &                      + 9*maux + 3)
+       nthreads=1               ! Serial
+c$omp  parallel
+c$omp  single
+c$     nthreads = omp_get_num_threads()
+c$     maxthreads = omp_get_max_threads()
+c$omp  end single
+c$omp  end parallel
+       mwork0 = (maxm+2*mbc)*(46*meqn + mwaves + meqn*mwaves
+     &                      + 9*maux + 3)*nthreads
      &          + narray * (mx + 2*mbc) * (my + 2*mbc)
      &                   * (mz + 2*mbc) * meqn
 c
@@ -693,14 +704,14 @@ c     # partition work array into pieces needed for local storage in
 c     # step2 routine. Find starting index of each piece:
 c
       i0qadd = 1
-      i0fadd = i0qadd + (maxm+2*mbc)*meqn
-      i0gadd = i0fadd + (maxm+2*mbc)*meqn
-      i0hadd = i0gadd + 6*(maxm+2*mbc)*meqn
-      i0q1d = i0hadd + 6*(maxm+2*mbc)*meqn
-      i0dtdx1d = i0q1d + (maxm+2*mbc)*meqn
-      i0dtdy1d = i0dtdx1d + (maxm+2*mbc)
-      i0dtdz1d = i0dtdy1d + (maxm+2*mbc)
-      i0qwrk1 = i0dtdz1d + (maxm+2*mbc)
+      i0fadd = i0qadd + (maxm+2*mbc)*meqn*nthreads
+      i0gadd = i0fadd + (maxm+2*mbc)*meqn*nthreads
+      i0hadd = i0gadd + 6*(maxm+2*mbc)*meqn*nthreads
+      i0q1d = i0hadd + 6*(maxm+2*mbc)*meqn*nthreads
+      i0dtdx1d = i0q1d + (maxm+2*mbc)*meqn*nthreads
+      i0dtdy1d = i0dtdx1d + (maxm+2*mbc)*nthreads
+      i0dtdz1d = i0dtdy1d + (maxm+2*mbc)*nthreads
+      i0qwrk1 = i0dtdz1d + (maxm+2*mbc)*nthreads
 c
       nqwork = (mx + 2*mbc) * (my + 2*mbc)
      &       * (mz + 2*mbc) * meqn  !# size of q array
@@ -711,10 +722,10 @@ c
         endif
 c
       i0aux1 = i0qwrk2 + nqwork
-      i0aux2 = i0aux1 + 3*(maxm+2*mbc)*maux
-      i0aux3 = i0aux2 + 3*(maxm+2*mbc)*maux
+      i0aux2 = i0aux1 + 3*(maxm+2*mbc)*maux*nthreads
+      i0aux3 = i0aux2 + 3*(maxm+2*mbc)*maux*nthreads
 c
-      i0next = i0aux3 + 3*(maxm+2*mbc)*maux  !# next free space
+      i0next = i0aux3 + 3*(maxm+2*mbc)*maux*nthreads  !# next free space
       mused = i0next - 1                     !# space already used
       mwork1 = mwork - mused              !# remaining space (passed to step2)
 c
