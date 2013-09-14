@@ -297,16 +297,16 @@ c     # negate the normal velocity:
          do 606 i = 1-mbc, mx+mbc
             do 606 j = 1-mbc, my+mbc
                if (t .lt. 0.1d0) then
-		   xi = xlower + (i-0.5d0)*dx
-		   yj = ylower + (j-0.5d0)*dy
+            	   xi = xlower + (i-0.5d0)*dx
+            	   yj = ylower + (j-0.5d0)*dy
                    r2 = (xi**2 + yj**2)
-		   s = -dexp(-500.d0*r2)*dexp(-500*t**2)
+            	   s = -dexp(-500.d0*r2)*dexp(-500*t**2)
 c                  write(27,271) t,i,j,r2,s
 c 271              format(d16.6,2i5,2d16.6)
-		   if (dabs(s).lt.1d-6) s = 0.d0
-		 else
-		   s = 0.d0
-		 endif
+            	   if (dabs(s).lt.1d-6) s = 0.d0
+            	 else
+            	   s = 0.d0
+            	 endif
                q(4,i,j,mz+kbc) = 2.d0*s - q(4,i,j,mz+1-kbc)
   606    continue
       go to 699
