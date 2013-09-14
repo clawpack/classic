@@ -268,7 +268,6 @@
                 
                 !           # compute modifications qadd and fadd along this slice
                 
-                !call flux3(2,maxm,num_eqn,num_waves,num_ghost,my, & q1d,dtdy1d,dtdz,dtdx,dummy1,aux2,dummy3,num_aux, & method,mthlim,qadd,fadd,gadd,hadd,cfl1d, & work(i0wave),work(i0s),work(i0amdq), & work(i0apdq),work(i0cqxx), & work(i0bmamdq),work(i0bmapdq), & work(i0bpamdq),work(i0bpapdq), & work(i0cmamdq),work(i0cmapdq), & work(i0cpamdq),work(i0cpapdq), & work(i0cmamdq2),work(i0cmapdq2), & work(i0cpamdq2),work(i0cpapdq2), & work(i0bmcqxxp),work(i0bpcqxxp), & work(i0bmcqxxm),work(i0bpcqxxm), & work(i0cmcqxxp),work(i0cpcqxxp), & work(i0cmcqxxm),work(i0cpcqxxm), & work(i0bmcmamdq),work(i0bmcmapdq), & work(i0bpcmamdq),work(i0bpcmapdq), & work(i0bmcpamdq),work(i0bmcpapdq), & work(i0bpcpamdq),work(i0bpcpapdq), & rpn3,rpt3,rptt3,use_fwave)
                 
                 call flux3(2,maxm,num_eqn,num_waves,num_ghost,my, &
                      q1d(1,1-num_ghost,me1),dtdy1d(1-num_ghost,me1),dtdz,dtdx,dummy1, &
@@ -353,7 +352,6 @@
              
              !           # compute modifications qadd and fadd along this slice
              
-            ! call flux3(3,maxm,num_eqn,num_waves,num_ghost,mz, & q1d,dtdz1d,dtdx,dtdy,dummy1,aux2,dummy3,num_aux, & method,mthlim,qadd,fadd,gadd,hadd,cfl1d, & work(i0wave),work(i0s),work(i0amdq), & work(i0apdq),work(i0cqxx), & work(i0bmamdq),work(i0bmapdq), & work(i0bpamdq),work(i0bpapdq), & work(i0cmamdq),work(i0cmapdq), & work(i0cpamdq),work(i0cpapdq), & work(i0cmamdq2),work(i0cmapdq2), & work(i0cpamdq2),work(i0cpapdq2), & work(i0bmcqxxp),work(i0bpcqxxp), & work(i0bmcqxxm),work(i0bpcqxxm), & work(i0cmcqxxp),work(i0cpcqxxp), & work(i0cmcqxxm),work(i0cpcqxxm), & work(i0bmcmamdq),work(i0bmcmapdq), & work(i0bpcmamdq),work(i0bpcmapdq), & work(i0bmcpamdq),work(i0bmcpapdq), & work(i0bpcpamdq),work(i0bpcpapdq), & rpn3,rpt3,rptt3,use_fwave)
 
              call flux3(3,maxm,num_eqn,num_waves,num_ghost,mz, &
                   q1d(1,1-num_ghost,me1),dtdz1d(1-num_ghost,me1),dtdx,dtdy,dummy1, &

@@ -21,11 +21,11 @@ c
 	    do i = 1-mbc,mx+mbc
                zcell = zlower + (k-0.5d0)*dz
                if (zcell .lt. 0.d0) then
-	          aux(1,i,j,k) = z1
-	          aux(2,i,j,k) = c1
+                  aux(1,i,j,k) = z1
+                  aux(2,i,j,k) = c1
                 else
-	          aux(1,i,j,k) = z2
-	          aux(2,i,j,k) = c2
+                  aux(1,i,j,k) = z2
+                  aux(2,i,j,k) = c2
                 endif
             enddo
          enddo
