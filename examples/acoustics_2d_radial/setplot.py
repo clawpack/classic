@@ -47,20 +47,22 @@ def setplot(plotdata):
     # Set up for item on these axes:
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = 0
-    plotitem.pcolor_cmap = colormaps.yellow_red_blue
+    plotitem.pcolor_cmap = colormaps.blue_yellow_red
+    plotitem.pcolor_cmin = -2.0
+    plotitem.pcolor_cmax = 2.0
     plotitem.add_colorbar = True
-    plotitem.show = True       # show on plot?
     
 
     # Figure for scatter plot
     # -----------------------
 
     plotfigure = plotdata.new_plotfigure(name='scatter', figno=3)
+    plotfigure.show = (qref_dir is not None)  # don't plot if 1d solution is missing
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = 'auto'
-    plotaxes.ylimits = 'auto'
+    plotaxes.xlimits = [0,1.5]
+    plotaxes.ylimits = [-2.,4.]
     plotaxes.title = 'Scatter plot'
 
     # Set up for item on these axes: scatter of 2d data

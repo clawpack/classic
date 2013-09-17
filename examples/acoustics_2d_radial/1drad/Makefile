@@ -12,45 +12,47 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 # Adjust these variables if desired:
 # ----------------------------------
 
-CLAW_PKG = classic                  # Clawpack package to use
-EXE = xclaw                         # Executable to create
-SETRUN_FILE = setrun.py             # File containing function to make data
-OUTDIR = _output                    # Directory for output
-SETPLOT_FILE = setplot.py           # File containing function to set plots
-PLOTDIR = _plots                    # Directory for plots
-
-OVERWRITE ?= True                   # False ==> make a copy of OUTDIR first
-RESTART ?= False                    # Should = clawdata.restart in setrun
+CLAW_PKG = Classic                  # Clawpack package to use
+CLAW_EXE = xclaw                    # Executable to create
+CLAW_setrun_file = setrun.py        # File containing function to make data
+CLAW_OUTDIR = _output               # Directory for output
+CLAW_setplot_file = setplot.py      # File containing function to set plots
+CLAW_PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?=  
+FFLAGS =
+
 
 # ---------------------------------
 # List of sources for this program:
 # ---------------------------------
 
 MODULES = \
-
+    
 SOURCES = \
   qinit.f \
+  src1.f \
   setprob.f \
-  setaux.f \
-  $(CLAW)/riemann/src/rp1_acoustics_variable.f90 \
-  $(CLAW)/classic/src/1d/b4step1.f \
+  $(CLAW)/riemann/src/rp1_acoustics.f90 \
+  $(CLAW)/classic/src/1d/setaux.f \
   $(CLAW)/classic/src/1d/bc1.f \
+  $(CLAW)/classic/src/1d/b4step1.f \
+  $(CLAW)/classic/src/1d/driver.f90 \
   $(CLAW)/classic/src/1d/claw1ez.f \
   $(CLAW)/classic/src/1d/claw1.f \
   $(CLAW)/classic/src/1d/copyq1.f \
-  $(CLAW)/classic/src/1d/driver.f90 \
   $(CLAW)/classic/src/1d/inlinelimiter.f90 \
   $(CLAW)/classic/src/1d/opendatafile.f \
   $(CLAW)/classic/src/1d/out1.f \
-  $(CLAW)/classic/src/1d/src1.f \
   $(CLAW)/classic/src/1d/step1.f90
+
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
 
+
+### DO NOT remove this line - make depends on it ###
+    
