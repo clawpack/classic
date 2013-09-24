@@ -32,69 +32,62 @@ def test2(save_new_regression_data=False):
     """
     Check sum of all q values in frame 1
     """
-    save_new_regression_data = (save_new_regression_data in [True,'True'])
 
-    f = plotdata.getframe(1)
+    # unique for this test:
+    frameno = 1
+    fname_data = 'regression_data_test2.txt'
+
+    f = plotdata.getframe(frameno)
     my2 = int(f.state.q.shape[-1] / 2)
     qsum1 = f.state.q[0,:,:my2].sum()
     qsum2 = f.state.q[0,:,my2:].sum()
     
-    fname_data = 'regression_data_test2.txt'
+    new_data = np.array([qsum1,qsum2])
     
     if save_new_regression_data:
-        np.savetxt(fname_data,np.array([qsum1,qsum2]))
+        np.savetxt(fname_data,new_data)
         print "*** Created new regression_data file ", fname_data
         
-
     # Read in archived data for comparison:
     regression_data = np.loadtxt(fname_data)
-    qsum1_expected = regression_data[0]
-    qsum2_expected = regression_data[1]
 
     tol = 1e-14
-    assert np.allclose(qsum1,qsum1_expected,tol), \
-        "frame 1: qsum1 = %s, expected: %s"  % (qsum1, qsum1_expected)
-    assert np.allclose(qsum2,qsum2_expected,tol), \
-        "frame 1: qsum2 = %s, expected: %s"  % (qsum2, qsum2_expected)
-    print "Frame 1 OK"
+    assert np.allclose(new_data,regression_data,tol), \
+        "\n  new_data: %s, \n  expected: %s"  % (new_data, regression_data)
+    print "Frame %i OK" % frameno
     
 
 def test3(save_new_regression_data=False):
     """
     Check sum of all q values in frame 2
     """
-    save_new_regression_data = (save_new_regression_data in [True,'True'])
-    
-    f = plotdata.getframe(2)
+    # unique for this test:
+    frameno = 2
+    fname_data = 'regression_data_test3.txt'
+
+    f = plotdata.getframe(frameno)
     my2 = int(f.state.q.shape[-1] / 2)
     qsum1 = f.state.q[0,:,:my2].sum()
     qsum2 = f.state.q[0,:,my2:].sum()
     
-    fname_data = 'regression_data_test3.txt'
-
+    new_data = np.array([qsum1,qsum2])
+    
     if save_new_regression_data:
-        np.savetxt(fname_data,np.array([qsum1,qsum2]))
+        np.savetxt(fname_data,new_data)
         print "*** Created new regression_data file ", fname_data
         
-
     # Read in archived data for comparison:
     regression_data = np.loadtxt(fname_data)
-    qsum1_expected = regression_data[0]
-    qsum2_expected = regression_data[1]
 
     tol = 1e-14
-    assert np.allclose(qsum1,qsum1_expected,tol), \
-        "frame 2: qsum1 = %s, expected: %s"  % (qsum1, qsum1_expected)
-    assert np.allclose(qsum2,qsum2_expected,tol), \
-        "frame 2: qsum2 = %s, expected: %s"  % (qsum2, qsum2_expected)
-    print "Frame 2 OK"
+    assert np.allclose(new_data,regression_data,tol), \
+        "\n  new_data: %s, \n  expected: %s"  % (new_data, regression_data)
+    print "Frame %i OK" % frameno
 
     
 if __name__=="__main__":
     test1()
-    print sys.argv
-    test2(*sys.argv[1:])
-    test3(*sys.argv[1:])
-    
-
+    save_new_regression_data = (len(sys.argv) > 1) and (sys.argv[1]=='True')
+    test2(save_new_regression_data)
+    test3(save_new_regression_data)
 
