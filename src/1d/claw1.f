@@ -262,7 +262,7 @@ c    rp1 = user-supplied subroutine that implements the Riemann solver
 c
 c          The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine rp1(meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,wave,s,amdq,apdq,maux)
+c     subroutine rp1(meqn,mwaves,maux,mbc,mx,ql,qr,auxl,auxr,wave,s,amdq,apdq)
 c     implicit double precision (a-h,o-z)
 c     dimension   ql(meqn, 1-mbc:mx+mbc)
 c     dimension   qr(meqn, 1-mbc:mx+mbc)

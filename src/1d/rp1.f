@@ -1,8 +1,8 @@
 c
 c
 c =========================================================
-      subroutine rp1(meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,
-     &           wave,s,amdq,apdq,maux)
+      subroutine rp1(meqn,mwaves,maux,mbc,mx,ql,qr,auxl,auxr,
+     &           wave,s,amdq,apdq)
 c =========================================================
 c
 c     # Solve Riemann problems for the 1D hyperbolic problem.
