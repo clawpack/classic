@@ -109,12 +109,13 @@ c
       close(unit=70)
       endif
 
-      write(60,1000) t,meqn,ngrids,maux
+      write(60,1000) t,meqn,ngrids,maux,3
 
  1000 format(e26.16,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,
-     &       i5,'                 maux'/,/)
+     &       i5,'                 maux'/,
+     &       i5,'                 ndim'/,/)
 c
 
       close(unit=50)
