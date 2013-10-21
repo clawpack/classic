@@ -87,9 +87,10 @@ PlotCubeEdges = [0 0 0 0 0 0];   % Plot edges of cube of refinement patch at
 % to be displayed for PlotType = 1,2,3.
 % Empty ==> no slices in that direction.
 
-xSliceCoords = [0.0, 0.5];
-ySliceCoords = 0.5;
-zSliceCoords = 0.5;
+s = linspace(-1,1,11);
+xSliceCoords = s;
+ySliceCoords = s;
+zSliceCoords = s;
 
 % ---------------------------------------------------------------------
 % ContourValues is a vector of values used to draw contour lines.

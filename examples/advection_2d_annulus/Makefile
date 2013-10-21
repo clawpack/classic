@@ -36,8 +36,8 @@ MODULES = \
 SOURCES = \
   mapc2p.f \
   qinit.f \
-  rpn2ad1.f \
-  rpt2ad1.f \
+  $(CLAW)/riemann/src/rpn2_vc_advection.f90 \
+  $(CLAW)/riemann/src/rpt2_vc_advection.f90 \
   setaux.f \
   setprob.f \
   stream.f \
