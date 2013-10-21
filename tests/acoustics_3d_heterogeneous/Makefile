@@ -34,28 +34,29 @@ FFLAGS ?=
 MODULES = \
 
 SOURCES = \
-  mapc2p.f \
   qinit.f \
-  $(CLAW)/riemann/src/rpn2_vc_advection.f90 \
-  $(CLAW)/riemann/src/rpt2_vc_advection.f90 \
-  setaux.f \
   setprob.f \
-  stream.f \
-  $(CLAW)/classic/src/2d/driver.f90 \
-  $(CLAW)/classic/src/2d/claw2ez.f \
-  $(CLAW)/classic/src/2d/claw2.f \
-  $(CLAW)/classic/src/2d/bc2.f \
-  $(CLAW)/classic/src/2d/b4step2.f \
-  $(CLAW)/classic/src/2d/step2.f90 \
-  $(CLAW)/classic/src/2d/step2ds.f90 \
-  $(CLAW)/classic/src/2d/dimsp2.f \
-  $(CLAW)/classic/src/2d/flux2.f90 \
-  $(CLAW)/classic/src/2d/copyq2.f \
-  $(CLAW)/classic/src/2d/inlinelimiter.f90 \
-  $(CLAW)/classic/src/2d/src2.f \
-  $(CLAW)/classic/src/2d/out2.f \
-  $(CLAW)/classic/src/2d/restart2.f \
-  $(CLAW)/classic/src/2d/opendatafile.f
+  bc3.f \
+  setaux.f \
+  $(CLAW)/riemann/src/rpn3_vc_acoustics.f90 \
+  $(CLAW)/riemann/src/rpt3_vc_acoustics.f90 \
+  $(CLAW)/riemann/src/rptt3_vc_acoustics.f90 \
+  $(CLAW)/classic/src/3d/driver.f90 \
+  $(CLAW)/classic/src/3d/claw3ez.f \
+  $(CLAW)/classic/src/3d/b4step3.f \
+  $(CLAW)/classic/src/3d/chkmth.f \
+  $(CLAW)/classic/src/3d/claw3.f \
+  $(CLAW)/classic/src/3d/step3.f90 \
+  $(CLAW)/classic/src/3d/step3ds.f90 \
+  $(CLAW)/classic/src/3d/dimsp3.f \
+  $(CLAW)/classic/src/3d/flux3.f90 \
+  $(CLAW)/classic/src/3d/copyq3.f \
+  $(CLAW)/classic/src/3d/limiter.f90 \
+  $(CLAW)/classic/src/3d/philim.f90 \
+  $(CLAW)/classic/src/3d/src3.f \
+  $(CLAW)/classic/src/3d/out3.f \
+  $(CLAW)/classic/src/3d/restart3.f \
+  $(CLAW)/classic/src/3d/opendatafile.f
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:

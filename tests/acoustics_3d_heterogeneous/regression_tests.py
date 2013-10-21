@@ -40,7 +40,7 @@ def test1():
 
 def test2(save_new_regression_data=False):
     """
-    Check sum of all q values in frame 1
+    Check sum of q values in frame 1
     """
 
     # unique for this test:
@@ -48,16 +48,17 @@ def test2(save_new_regression_data=False):
     fname_data = 'regression_data_test2.txt'
 
     f = plotdata.getframe(frameno)
-    my2 = int(f.state.q.shape[-1] / 2)
-    qsum1 = f.state.q[0,:,:my2].sum()
-    qsum2 = f.state.q[0,:,my2:].sum()
-    
-    new_data = np.array([qsum1,qsum2])
-    
+    psum = f.state.q[0,:,:,:].sum()
+    usum = f.state.q[1,:,:,:].sum()
+    vsum = f.state.q[2,:,:,:].sum()
+
+    new_data = np.array([psum,usum,vsum])
+
+
     if save_new_regression_data:
-        np.savetxt(fname_data,new_data)
+        np.savetxt(fname_data, new_data)
         print "*** Created new regression_data file ", fname_data
-        
+
     # Read in archived data for comparison:
     regression_data = np.loadtxt(fname_data)
 
@@ -65,27 +66,29 @@ def test2(save_new_regression_data=False):
     assert np.allclose(new_data,regression_data,tol), \
         "\n  new_data: %s, \n  expected: %s"  % (new_data, regression_data)
     print "Frame %i OK" % frameno
-    
+
+
 
 def test3(save_new_regression_data=False):
     """
-    Check sum of all q values in frame 2
+    Check sum of q values in frame 1
     """
+
     # unique for this test:
     frameno = 2
     fname_data = 'regression_data_test3.txt'
 
     f = plotdata.getframe(frameno)
-    my2 = int(f.state.q.shape[-1] / 2)
-    qsum1 = f.state.q[0,:,:my2].sum()
-    qsum2 = f.state.q[0,:,my2:].sum()
-    
-    new_data = np.array([qsum1,qsum2])
+    psum = f.state.q[0,:,:,:].sum()
+    usum = f.state.q[1,:,:,:].sum()
+    vsum = f.state.q[2,:,:,:].sum()
+
+    new_data = np.array([psum,usum,vsum])
     
     if save_new_regression_data:
-        np.savetxt(fname_data,new_data)
+        np.savetxt(fname_data, new_data)
         print "*** Created new regression_data file ", fname_data
-        
+
     # Read in archived data for comparison:
     regression_data = np.loadtxt(fname_data)
 
@@ -93,7 +96,6 @@ def test3(save_new_regression_data=False):
     assert np.allclose(new_data,regression_data,tol), \
         "\n  new_data: %s, \n  expected: %s"  % (new_data, regression_data)
     print "Frame %i OK" % frameno
-
     
 if __name__=="__main__":
     setup()
@@ -102,4 +104,5 @@ if __name__=="__main__":
     test2(save_new_regression_data)
     test3(save_new_regression_data)
     teardown()
+
 
