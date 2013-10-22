@@ -314,8 +314,8 @@ c           along a one-dimensional slice of data.
 c
 c          The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,
-c    &                  auxl,auxr,wave,s,amdq,apdq,maux)
+c     subroutine rpn2(ixy,maxm,meqn,mwaves,maux,mbc,mx,ql,qr,
+c    &                  auxl,auxr,wave,s,amdq,apdq)
 c
 c     implicit double precision (a-h,o-z)
 c     dimension wave(meqn, mwaves, 1-mbc:maxm+mbc)
@@ -364,8 +364,8 @@ c    rpt2 = user-supplied subroutine that implements the splitting of
 c           a flux difference asdq into waves in the transverse direction.
 c           The form of this subroutine is
 c  -------------------------------------------------
-c     subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,aux1,aux2,aux3,
-c                     imp,asdq,bmasdq,bpasdq,maux)
+c     subroutine rpt2(ixy,imp,maxm,meqn,mwaves,maux,mbc,mx,ql,qr,aux1,aux2,aux3,
+c                     asdq,bmasdq,bpasdq)
 c
 c     implicit double precision (a-h,o-z)
 c     dimension     ql(meqn, 1-mbc:maxm+mbc)

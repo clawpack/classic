@@ -1,8 +1,8 @@
 c
 c
 c     ==================================================================
-      subroutine rptt3(ixyz,icoor,maxm,meqn,mwaves,mbc,mx,
-     &                  ql,qr,aux1,aux2,aux3,maux,imp,impt,bsasdq,
+      subroutine rptt3(ixyz,icoor,imp,impt,maxm,meqn,mwaves,maux,mbc,mx,
+     &                  ql,qr,aux1,aux2,aux3,bsasdq,
      &                  cmbsasdq,cpbsasdq)
 c     ==================================================================
 c
