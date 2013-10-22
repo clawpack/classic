@@ -2,8 +2,8 @@
 c
 c
 c     =====================================================
-      subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,
-     &			auxl,auxr,wave,s,amdq,apdq,maux)
+      subroutine rpn2(ixy,maxm,meqn,mwaves,maux,mbc,mx,ql,qr,
+     &			auxl,auxr,wave,s,amdq,apdq)
 c     =====================================================
 c
 c     # Riemann-solver for the advection equation

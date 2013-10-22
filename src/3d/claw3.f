@@ -294,7 +294,7 @@ c           along a one-dimensional slice of data.
 c
 c          The form of this subroutine is
 c  ---------------------------------------------------------------------
-c     subroutine rpn3(ixyz,maxm,meqn,mwaves,mbc,mx,ql,qr,
+c     subroutine rpn3(ixyz,maxm,meqn,mwaves,maux,mbc,mx,ql,qr,
 c    &                  auxl,auxr,maux,wave,s,amdq,apdq)
 c    implicit double precision (a-h,o-z)
 c     dimension wave(mwaves, meqn, 1-mbc:maxm+mbc)
@@ -345,8 +345,8 @@ c    rpt3 = user-supplied subroutine that implements the splitting of
 c           a flux difference asdq into waves in the transverse direction.
 c           The form of this subroutine is
 c  ---------------------------------------------------------------------
-c     subroutine rpt3(ixyz,icoor,maxm,meqn,mwaves,mbc,mx,
-c    &                  ql,qr,aux1,aux2,aux3,maux,imp,asdq,
+c     subroutine rpt3(ixyz,icoor,imp,maxm,meqn,mwaves,maux,mbc,mx,
+c    &                  ql,qr,aux1,aux2,aux3,maux,asdq,
 c    &                  bmasdq,bpasdq)
 c     implicit double precision (a-h,o-z)
 c     dimension     ql(meqn, 1-mbc:maxm+mbc)
@@ -427,8 +427,8 @@ c           a flux difference bsasdq into waves in the double transverse
 c           direction.
 c           This subroutine has the form :
 c  ---------------------------------------------------------------------
-c     subroutine rptt3(ixyz,icoor,maxm,meqn,mwaves,mbc,mx,
-c    &                  ql,qr,aux1,aux2,aux3,maux,imp,impt,bsasdq,
+c     subroutine rptt3(ixyz,icoor,imp,impt,maxm,meqn,mwaves,maux,mbc,mx,
+c    &                  ql,qr,aux1,aux2,aux3,bsasdq,
 c    &                  cmbsasdq,cpbsasdq)
 c     implicit double precision (a-h,o-z)
 c     dimension      ql(meqn, 1-mbc:maxm+mbc)
