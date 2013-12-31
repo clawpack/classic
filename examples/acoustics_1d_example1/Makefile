@@ -34,8 +34,8 @@ FFLAGS ?=
 MODULES = \
 
 SOURCES = \
-  qinit.f \
-  setprob.f \
+  qinit.f90 \
+  setprob.f90 \
   $(CLAW)/riemann/src/rp1_acoustics.f90 \
   $(CLAW)/classic/src/1d/setaux.f90 \
   $(CLAW)/classic/src/1d/bc1.f \
