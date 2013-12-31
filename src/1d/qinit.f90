@@ -8,9 +8,9 @@ subroutine qinit(meqn,mbc,mx,xlower,dx,q,maux,aux)
     implicit none
     
     integer, intent(in) :: meqn,mbc,mx,maux
-    double precision, intent(in) :: xlower,dx
-    double precision, intent(in) :: aux(maux,1-mbc:mx+mbc)
-    double precision, intent(inout) :: q(meqn,1-mbc:mx+mbc)
+    real(kind=8), intent(in) :: xlower,dx
+    real(kind=8), intent(in) :: aux(maux,1-mbc:mx+mbc)
+    real(kind=8), intent(inout) :: q(meqn,1-mbc:mx+mbc)
 
     write(6,*) '*** Error -- you must set initial conditions'
     stop
