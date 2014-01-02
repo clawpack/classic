@@ -43,7 +43,7 @@ SOURCES = \
   $(CLAW)/riemann/src/rptt3_vc_acoustics.f90 \
   $(CLAW)/classic/src/3d/driver.f90 \
   $(CLAW)/classic/src/3d/claw3ez.f \
-  $(CLAW)/classic/src/3d/b4step3.f \
+  $(CLAW)/classic/src/3d/b4step3.f90 \
   $(CLAW)/classic/src/3d/chkmth.f \
   $(CLAW)/classic/src/3d/claw3.f \
   $(CLAW)/classic/src/3d/step3.f90 \
@@ -53,7 +53,7 @@ SOURCES = \
   $(CLAW)/classic/src/3d/copyq3.f \
   $(CLAW)/classic/src/3d/limiter.f90 \
   $(CLAW)/classic/src/3d/philim.f90 \
-  $(CLAW)/classic/src/3d/src3.f \
+  $(CLAW)/classic/src/3d/src3.f90 \
   $(CLAW)/classic/src/3d/out3.f \
   $(CLAW)/classic/src/3d/restart3.f \
   $(CLAW)/classic/src/3d/opendatafile.f
