@@ -179,7 +179,7 @@ c            # into matlab... reset tiny values to zero:
      &       e26.16,'    ylow', /,
      &       e26.16,'    dx', /,
      &       e26.16,'    dy',/)
- 1005     format(4e26.16)
+ 1005     format(50e26.16)
 
             
       if (outaux) then 

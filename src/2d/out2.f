@@ -69,7 +69,7 @@ c            # into matlab... reset tiny values to zero:
              enddo
 c
           write(50,1005) (q(m,i,j), m=1,meqn)
- 1005     format(4e26.16)
+ 1005     format(50e26.16)
 c
  10       continue
         write(50,*) ' '
