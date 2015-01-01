@@ -92,8 +92,13 @@ def setplot(plotdata):
     plotitem.color = 'r'
     plotitem.kwargs = {'linewidth': 2}
     plotitem.show = True       # show on plot?
-    plotaxes.afteraxes = "import pylab; pylab.legend(('2d data', '1d reference solution'))"
     
+    def make_legend(current_data):
+        import matplotlib.pyplot as plt
+        plt.legend(('2d data', '1d reference solution'))
+
+    plotaxes.afteraxes = make_legend
+
 
     # Parameters used only when creating html and/or latex hardcopy
     # e.g., via clawpack.visclaw.frametools.printframes:
