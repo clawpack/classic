@@ -20,7 +20,7 @@ def qtrue(x,t):
     from numpy import mod, exp, where, logical_and
     x0 = x - probdata.u*t
     x0 = mod(x0, 1.)   # because of periodic boundary conditions
-    q = exp(-probdata.beta * (x0-0.6)**2)
+    q = exp(-probdata.beta * (x0-0.75)**2)
     q = where(logical_and(x0 > 0.1, x0 < 0.4), q+1, q)
     return q
     

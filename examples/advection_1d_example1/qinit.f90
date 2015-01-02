@@ -19,7 +19,7 @@ subroutine qinit(meqn,mbc,mx,xlower,dx,q,maux,aux)
  
       do i=1,mx
          xcell = xlower + (i-0.5d0)*dx
-         q(1,i) = dexp(-beta * (xcell-0.6d0)**2)  
+         q(1,i) = dexp(-beta * (xcell-0.75d0)**2)  
          if ((xcell>0.1d0) .and. (xcell<0.4d0)) then
             q(1,i) = q(1,i) + 1.d0
             endif
