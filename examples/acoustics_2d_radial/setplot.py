@@ -21,7 +21,7 @@ def setplot(plotdata):
     
     """ 
     Specify what is to be plotted at each frame.
-    Input:  plotdata, an instance of pyclaw.plotters.data.ClawPlotData.
+    Input:  plotdata, an instance of clawpack.visclaw.data.ClawPlotData.
     Output: a modified version of plotdata.
     
     """ 
@@ -92,11 +92,16 @@ def setplot(plotdata):
     plotitem.color = 'r'
     plotitem.kwargs = {'linewidth': 2}
     plotitem.show = True       # show on plot?
-    plotaxes.afteraxes = "pylab.legend(('2d data', '1d reference solution'))"
     
+    def make_legend(current_data):
+        import matplotlib.pyplot as plt
+        plt.legend(('2d data', '1d reference solution'))
+
+    plotaxes.afteraxes = make_legend
+
 
     # Parameters used only when creating html and/or latex hardcopy
-    # e.g., via pyclaw.plotters.frametools.printframes:
+    # e.g., via clawpack.visclaw.frametools.printframes:
 
     plotdata.printfigs = True                # print figures
     plotdata.print_format = 'png'            # file format
@@ -104,6 +109,7 @@ def setplot(plotdata):
     plotdata.print_fignos = 'all'            # list of figures to print
     plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
+    plotdata.html_movie = 'JSAnimation'      # new style, or "4.x" for old style
     plotdata.latex = True                    # create latex file of plots?
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
