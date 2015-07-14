@@ -12,7 +12,6 @@ class Acoustics1DHeterogeneousTest(test.ClassicRegressionTest):
     r"""Basic test for an 1D heterogeneous acoustics test case"""
 
     def runTest(self, save=False):
-        r"""Test """
 
         # Write out data files
         self.load_rundata()
@@ -28,7 +27,6 @@ class Acoustics1DHeterogeneousTest(test.ClassicRegressionTest):
                          regression_data_path='regression_data_test3.txt')
 
         self.success = True
-
 
 
 
