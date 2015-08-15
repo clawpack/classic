@@ -28,6 +28,24 @@ RESTART ?= False                    # Should = clawdata.restart in setrun
 FFLAGS ?=  
 
 # ---------------------------------
+# package sources for this program:
+# ---------------------------------
+
+include $(CLAW)/classic/src/3d/classic_3d.make
+
+# ---------------------------------------
+# package sources specifically to exclude
+# (i.e. if a custom replacement source 
+#  under a different name is provided)
+# ---------------------------------------
+
+EXCLUDE_MODULES = \
+
+EXCLUDE_SOURCES = \
+  inlinelimiter.f90
+
+
+# ---------------------------------
 # List of sources for this program:
 # ---------------------------------
 
@@ -41,22 +59,8 @@ SOURCES = \
   $(CLAW)/riemann/src/rpn3_vc_acoustics.f90 \
   $(CLAW)/riemann/src/rpt3_vc_acoustics.f90 \
   $(CLAW)/riemann/src/rptt3_vc_acoustics.f90 \
-  $(CLAW)/classic/src/3d/driver.f90 \
-  $(CLAW)/classic/src/3d/claw3ez.f \
-  $(CLAW)/classic/src/3d/b4step3.f90 \
-  $(CLAW)/classic/src/3d/chkmth.f \
-  $(CLAW)/classic/src/3d/claw3.f \
-  $(CLAW)/classic/src/3d/step3.f90 \
-  $(CLAW)/classic/src/3d/step3ds.f90 \
-  $(CLAW)/classic/src/3d/dimsp3.f \
-  $(CLAW)/classic/src/3d/flux3.f90 \
-  $(CLAW)/classic/src/3d/copyq3.f \
   $(CLAW)/classic/src/3d/limiter.f90 \
-  $(CLAW)/classic/src/3d/philim.f90 \
-  $(CLAW)/classic/src/3d/src3.f90 \
-  $(CLAW)/classic/src/3d/out3.f \
-  $(CLAW)/classic/src/3d/restart3.f \
-  $(CLAW)/classic/src/3d/opendatafile.f
+  $(CLAW)/classic/src/3d/philim.f90
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
