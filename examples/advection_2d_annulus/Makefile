@@ -28,6 +28,23 @@ RESTART ?= False                    # Should = clawdata.restart in setrun
 FFLAGS ?=  
 
 # ---------------------------------
+# package sources for this program:
+# ---------------------------------
+
+include $(CLAW)/classic/src/2d/classic_2d.make
+
+# ---------------------------------------
+# package sources specifically to exclude
+# (i.e. if a custom replacement source 
+#  under a different name is provided)
+# ---------------------------------------
+
+EXCLUDE_MODULES = \
+
+EXCLUDE_SOURCES = \
+
+
+# ---------------------------------
 # List of sources for this program:
 # ---------------------------------
 
@@ -40,22 +57,22 @@ SOURCES = \
   $(CLAW)/riemann/src/rpt2_vc_advection.f90 \
   setaux.f \
   setprob.f \
-  stream.f \
-  $(CLAW)/classic/src/2d/driver.f90 \
-  $(CLAW)/classic/src/2d/claw2ez.f \
-  $(CLAW)/classic/src/2d/claw2.f \
-  $(CLAW)/classic/src/2d/bc2.f \
-  $(CLAW)/classic/src/2d/b4step2.f90 \
-  $(CLAW)/classic/src/2d/step2.f90 \
-  $(CLAW)/classic/src/2d/step2ds.f90 \
-  $(CLAW)/classic/src/2d/dimsp2.f \
-  $(CLAW)/classic/src/2d/flux2.f90 \
-  $(CLAW)/classic/src/2d/copyq2.f \
-  $(CLAW)/classic/src/2d/inlinelimiter.f90 \
-  $(CLAW)/classic/src/2d/src2.f90 \
-  $(CLAW)/classic/src/2d/out2.f \
-  $(CLAW)/classic/src/2d/restart2.f \
-  $(CLAW)/classic/src/2d/opendatafile.f
+  stream.f #\
+  #$(CLAW)/classic/src/2d/driver.f90 \
+  #$(CLAW)/classic/src/2d/claw2ez.f \
+  #$(CLAW)/classic/src/2d/claw2.f \
+  #$(CLAW)/classic/src/2d/bc2.f \
+  #$(CLAW)/classic/src/2d/b4step2.f90 \
+  #$(CLAW)/classic/src/2d/step2.f90 \
+  #$(CLAW)/classic/src/2d/step2ds.f90 \
+  #$(CLAW)/classic/src/2d/dimsp2.f \
+  #$(CLAW)/classic/src/2d/flux2.f90 \
+  #$(CLAW)/classic/src/2d/copyq2.f \
+  #$(CLAW)/classic/src/2d/inlinelimiter.f90 \
+  #$(CLAW)/classic/src/2d/src2.f90 \
+  #$(CLAW)/classic/src/2d/out2.f \
+  #$(CLAW)/classic/src/2d/restart2.f \
+  #$(CLAW)/classic/src/2d/opendatafile.f
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:

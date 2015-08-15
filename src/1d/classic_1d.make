@@ -1,4 +1,4 @@
-#list of common sources for the classic module
+#list of common sources for classic 1d codes
 COMMON_SOURCES += \
   $(CLAW)/classic/src/1d/qinit.f90 \
   $(CLAW)/classic/src/1d/setprob.f90 \
