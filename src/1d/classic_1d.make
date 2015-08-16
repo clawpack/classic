@@ -1,16 +1,19 @@
+#get the directory of this makefile
+LIB:=$(dir $(lastword $(MAKEFILE_LIST)))
+
 #list of common sources for classic 1d codes
 COMMON_SOURCES += \
-  $(CLAW)/classic/src/1d/qinit.f90 \
-  $(CLAW)/classic/src/1d/setprob.f90 \
-  $(CLAW)/classic/src/1d/setaux.f90 \
-  $(CLAW)/classic/src/1d/bc1.f \
-  $(CLAW)/classic/src/1d/b4step1.f90 \
-  $(CLAW)/classic/src/1d/driver.f90 \
-  $(CLAW)/classic/src/1d/claw1ez.f \
-  $(CLAW)/classic/src/1d/claw1.f \
-  $(CLAW)/classic/src/1d/copyq1.f \
-  $(CLAW)/classic/src/1d/inlinelimiter.f90 \
-  $(CLAW)/classic/src/1d/opendatafile.f \
-  $(CLAW)/classic/src/1d/out1.f \
-  $(CLAW)/classic/src/1d/src1.f90 \
-  $(CLAW)/classic/src/1d/step1.f90
+  $(LIB)/qinit.f90 \
+  $(LIB)/setprob.f90 \
+  $(LIB)/setaux.f90 \
+  $(LIB)/bc1.f \
+  $(LIB)/b4step1.f90 \
+  $(LIB)/driver.f90 \
+  $(LIB)/claw1ez.f \
+  $(LIB)/claw1.f \
+  $(LIB)/copyq1.f \
+  $(LIB)/inlinelimiter.f90 \
+  $(LIB)/opendatafile.f \
+  $(LIB)/out1.f \
+  $(LIB)/src1.f90 \
+  $(LIB)/step1.f90

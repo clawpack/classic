@@ -1,20 +1,23 @@
+#get the directory of this makefile
+LIB:=$(dir $(lastword $(MAKEFILE_LIST)))
+
 #list of common source files for classic 1d codes
 COMMON_SOURCES = \
-  $(CLAW)/classic/src/2d/qinit.f \
-  $(CLAW)/classic/src/2d/setprob.f \
-  $(CLAW)/classic/src/2d/setaux.f90 \
-  $(CLAW)/classic/src/2d/driver.f90 \
-  $(CLAW)/classic/src/2d/claw2ez.f \
-  $(CLAW)/classic/src/2d/claw2.f \
-  $(CLAW)/classic/src/2d/bc2.f \
-  $(CLAW)/classic/src/2d/b4step2.f90 \
-  $(CLAW)/classic/src/2d/step2.f90 \
-  $(CLAW)/classic/src/2d/step2ds.f90 \
-  $(CLAW)/classic/src/2d/dimsp2.f \
-  $(CLAW)/classic/src/2d/flux2.f90 \
-  $(CLAW)/classic/src/2d/copyq2.f \
-  $(CLAW)/classic/src/2d/inlinelimiter.f90 \
-  $(CLAW)/classic/src/2d/src2.f90 \
-  $(CLAW)/classic/src/2d/out2.f \
-  $(CLAW)/classic/src/2d/restart2.f \
-  $(CLAW)/classic/src/2d/opendatafile.f
+  $(LIB)/qinit.f \
+  $(LIB)/setprob.f \
+  $(LIB)/setaux.f90 \
+  $(LIB)/driver.f90 \
+  $(LIB)/claw2ez.f \
+  $(LIB)/claw2.f \
+  $(LIB)/bc2.f \
+  $(LIB)/b4step2.f90 \
+  $(LIB)/step2.f90 \
+  $(LIB)/step2ds.f90 \
+  $(LIB)/dimsp2.f \
+  $(LIB)/flux2.f90 \
+  $(LIB)/copyq2.f \
+  $(LIB)/inlinelimiter.f90 \
+  $(LIB)/src2.f90 \
+  $(LIB)/out2.f \
+  $(LIB)/restart2.f \
+  $(LIB)/opendatafile.f

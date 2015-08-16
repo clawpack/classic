@@ -1,21 +1,24 @@
+#get the directory of this makefile
+LIB:=$(dir $(lastword $(MAKEFILE_LIST)))
+
 #list of common source files for classic 3d codes
 COMMON_SOURCES = \
-  $(CLAW)/classic/src/3d/qinit.f \
-  $(CLAW)/classic/src/3d/setprob.f \
-  $(CLAW)/classic/src/3d/bc3.f \
-  $(CLAW)/classic/src/3d/setaux.f \
-  $(CLAW)/classic/src/3d/driver.f90 \
-  $(CLAW)/classic/src/3d/claw3ez.f \
-  $(CLAW)/classic/src/3d/b4step3.f90 \
-  $(CLAW)/classic/src/3d/chkmth.f \
-  $(CLAW)/classic/src/3d/claw3.f \
-  $(CLAW)/classic/src/3d/step3.f90 \
-  $(CLAW)/classic/src/3d/step3ds.f90 \
-  $(CLAW)/classic/src/3d/dimsp3.f \
-  $(CLAW)/classic/src/3d/flux3.f90 \
-  $(CLAW)/classic/src/3d/copyq3.f \
-  $(CLAW)/classic/src/3d/inlinelimiter.f90 \
-  $(CLAW)/classic/src/3d/src3.f90 \
-  $(CLAW)/classic/src/3d/out3.f \
-  $(CLAW)/classic/src/3d/restart3.f \
-  $(CLAW)/classic/src/3d/opendatafile.f
+  $(LIB)/qinit.f \
+  $(LIB)/setprob.f \
+  $(LIB)/bc3.f \
+  $(LIB)/setaux.f \
+  $(LIB)/driver.f90 \
+  $(LIB)/claw3ez.f \
+  $(LIB)/b4step3.f90 \
+  $(LIB)/chkmth.f \
+  $(LIB)/claw3.f \
+  $(LIB)/step3.f90 \
+  $(LIB)/step3ds.f90 \
+  $(LIB)/dimsp3.f \
+  $(LIB)/flux3.f90 \
+  $(LIB)/copyq3.f \
+  $(LIB)/inlinelimiter.f90 \
+  $(LIB)/src3.f90 \
+  $(LIB)/out3.f \
+  $(LIB)/restart3.f \
+  $(LIB)/opendatafile.f
