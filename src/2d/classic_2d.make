@@ -1,7 +1,7 @@
 #get the directory of this makefile
 LIB:=$(dir $(lastword $(MAKEFILE_LIST)))
 
-#list of common source files for classic 1d codes
+#list of common source files for classic 2d codes
 COMMON_SOURCES = \
   $(LIB)/qinit.f \
   $(LIB)/setprob.f \
