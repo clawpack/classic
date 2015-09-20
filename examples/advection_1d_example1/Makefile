@@ -31,7 +31,7 @@ FFLAGS ?=
 # package sources for this program:
 # ---------------------------------
 
-include $(CLAW)/classic/src/1d/classic_1d.make
+include $(CLAW)/classic/src/1d/Makefile.classic_1d
 
 # ---------------------------------------
 # package sources specifically to exclude

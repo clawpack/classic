@@ -31,7 +31,7 @@ FFLAGS ?=
 # package sources for this program:
 # ---------------------------------
 
-include $(CLAW)/classic/src/2d/classic_2d.make
+include $(CLAW)/classic/src/2d/Makefile.classic_2d
 
 # ---------------------------------------
 # package sources specifically to exclude
@@ -45,7 +45,7 @@ EXCLUDE_SOURCES = \
 
 
 # ---------------------------------
-# List of sources for this program:
+# List of custom sources for this program:
 # ---------------------------------
 
 MODULES = \
@@ -57,22 +57,7 @@ SOURCES = \
   $(CLAW)/riemann/src/rpt2_vc_advection.f90 \
   setaux.f \
   setprob.f \
-  stream.f #\
-  #$(CLAW)/classic/src/2d/driver.f90 \
-  #$(CLAW)/classic/src/2d/claw2ez.f \
-  #$(CLAW)/classic/src/2d/claw2.f \
-  #$(CLAW)/classic/src/2d/bc2.f \
-  #$(CLAW)/classic/src/2d/b4step2.f90 \
-  #$(CLAW)/classic/src/2d/step2.f90 \
-  #$(CLAW)/classic/src/2d/step2ds.f90 \
-  #$(CLAW)/classic/src/2d/dimsp2.f \
-  #$(CLAW)/classic/src/2d/flux2.f90 \
-  #$(CLAW)/classic/src/2d/copyq2.f \
-  #$(CLAW)/classic/src/2d/inlinelimiter.f90 \
-  #$(CLAW)/classic/src/2d/src2.f90 \
-  #$(CLAW)/classic/src/2d/out2.f \
-  #$(CLAW)/classic/src/2d/restart2.f \
-  #$(CLAW)/classic/src/2d/opendatafile.f
+  stream.f
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:

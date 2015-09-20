@@ -31,7 +31,7 @@ FFLAGS ?=
 # package sources for this program:
 # ---------------------------------
 
-include $(CLAW)/classic/src/3d/classic_3d.make
+include $(CLAW)/classic/src/3d/Makefile.classic_3d
 
 # ---------------------------------------
 # package sources specifically to exclude
@@ -46,7 +46,7 @@ EXCLUDE_SOURCES = \
 
 
 # ---------------------------------
-# List of sources for this program:
+# List of custom sources for this program:
 # ---------------------------------
 
 MODULES = \
