@@ -1,5 +1,5 @@
 #get the directory of this makefile
-LIB:=$(dir $(lastword $(MAKEFILE_LIST)))
+LIB:=$(CLAW)/classic/src/1d
 
 #list of common sources for classic 1d codes
 COMMON_SOURCES += \
