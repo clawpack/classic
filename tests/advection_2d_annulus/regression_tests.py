@@ -22,10 +22,10 @@ class Advection2DAnnulusTest(test.ClassicRegressionTest):
         self.run_code()
 
         # Perform tests
-        self.check_frame(save=save, frame_num=1,
-                         regression_data_path='regression_data_test2.txt')
-        self.check_frame(save=save, frame_num=2,
-                         regression_data_path='regression_data_test3.txt')
+        self.check_frame(save=save, frame_num=1, 
+                         file_name='regression_data_test2.txt')
+        self.check_frame(save=save, frame_num=2, 
+                         file_name='regression_data_test3.txt')
 
         self.success = True
 

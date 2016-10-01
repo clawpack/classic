@@ -23,9 +23,9 @@ class Acoustics3DHeterogeneousTest(test.ClassicRegressionTest):
 
         # Perform tests
         self.check_frame(save=save, indices=[0, 1, 2], frame_num=1,
-                         regression_data_path='regression_data_test2.txt')
+                         file_name='regression_data_test2.txt')
         self.check_frame(save=save, indices=[0, 1, 2], frame_num=2,
-                         regression_data_path='regression_data_test3.txt')
+                         file_name='regression_data_test3.txt')
 
         self.success = True
 
