@@ -1,0 +1,90 @@
+Clawpack Git Status 
+Diffs can be found in /Users/rjl/git/clawpack/classic/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt
+
+Sat, 08 Oct 2016 21:19:21 PDT
+$CLAW = /Users/rjl/git/clawpack
+$FC = gfortran
+
+
+===========
+classic
+===========
+/Users/rjl/git/clawpack/classic
+
+--- last commit ---
+1fdb18e removed claw_git status files and will generate one at a time to avoid recursive listing of changes
+
+--- branch and status ---
+## regression_claw_git_status
+
+
+===========
+amrclaw
+===========
+/Users/rjl/git/clawpack/amrclaw
+
+--- last commit ---
+0978b94 removed claw_git status files -- add these one at a time after other changes to gauges are merged to keep it clean
+
+--- branch and status ---
+## regression_data_copy_gauges
+
+
+===========
+clawutil
+===========
+/Users/rjl/git/clawpack/clawutil
+
+--- last commit ---
+bbc12d6 Merge pull request #105 from mandli/gauge-test-update
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+pyclaw
+===========
+/Users/rjl/git/clawpack/pyclaw
+
+--- last commit ---
+314fd93 Merge pull request #541 from mandli/add-new-gauges
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+visclaw
+===========
+/Users/rjl/git/clawpack/visclaw
+
+--- last commit ---
+72ee0db Merge pull request #187 from rjleveque/remove_ioff
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+riemann
+===========
+/Users/rjl/git/clawpack/riemann
+
+--- last commit ---
+48a46d3 Merge pull request #113 from rjleveque/shallow_roe_needs_grav
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+geoclaw
+===========
+/Users/rjl/git/clawpack/geoclaw
+
+--- last commit ---
+7edbc79 Merge pull request #227 from rjleveque/gauge_error_message
+
+--- branch and status ---
+## master...origin/master
