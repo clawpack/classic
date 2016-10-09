@@ -1,0 +1,628 @@
+Clawpack git diffs...
+
+===========
+classic
+===========
+/Users/rjl/git/clawpack/classic
+
+diff --git a/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt b/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt
+new file mode 100644
+index 0000000..b1d6b21
+--- /dev/null
++++ b/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt
+@@ -0,0 +1,67 @@
++Clawpack git diffs...
++
++===========
++classic
++===========
++/Users/rjl/git/clawpack/classic
++
++diff --git a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
++index 7c7fdda..1ae7006 100644
++--- a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
+++++ b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
++@@ -1,2 +1,2 @@
++-7.856413881148975520e+01
++-6.304945901101816474e+01
+++7.856413881148978362e+01
+++6.304945901101817896e+01
++diff --git a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
++index 9f4a58c..5f56ae2 100644
++--- a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
+++++ b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
++@@ -1,2 +1,2 @@
++-7.856413881148984046e+01
++--8.379980507478311524e-03
+++7.856413881148981204e+01
+++-8.379980507470463635e-03
++
++
++===========
++amrclaw
++===========
++/Users/rjl/git/clawpack/amrclaw
++
++
++
++===========
++clawutil
++===========
++/Users/rjl/git/clawpack/clawutil
++
++
++
++===========
++pyclaw
++===========
++/Users/rjl/git/clawpack/pyclaw
++
++
++
++===========
++visclaw
++===========
++/Users/rjl/git/clawpack/visclaw
++
++
++
++===========
++riemann
++===========
++/Users/rjl/git/clawpack/riemann
++
++
++
++===========
++geoclaw
++===========
++/Users/rjl/git/clawpack/geoclaw
++
+diff --git a/tests/acoustics_1d_heterogeneous/regression_data/claw_git_status.txt b/tests/acoustics_1d_heterogeneous/regression_data/claw_git_status.txt
+new file mode 100644
+index 0000000..552b06b
+--- /dev/null
++++ b/tests/acoustics_1d_heterogeneous/regression_data/claw_git_status.txt
+@@ -0,0 +1,92 @@
++Clawpack Git Status 
++Diffs can be found in /Users/rjl/git/clawpack/classic/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt
++
++Sat, 08 Oct 2016 20:32:11 PDT
++$CLAW = /Users/rjl/git/clawpack
++$FC = gfortran
++
++
++===========
++classic
++===========
++/Users/rjl/git/clawpack/classic
++
++--- last commit ---
++05d030e Merge pull request #73 from mandli/new-test-location
++
++--- branch and status ---
++## master...origin/master
++ M tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
++ M tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
++
++
++===========
++amrclaw
++===========
++/Users/rjl/git/clawpack/amrclaw
++
++--- last commit ---
++cab6449 Merge pull request #174 from rjleveque/test_merge_fixProperNesting
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++clawutil
++===========
++/Users/rjl/git/clawpack/clawutil
++
++--- last commit ---
++bbc12d6 Merge pull request #105 from mandli/gauge-test-update
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++pyclaw
++===========
++/Users/rjl/git/clawpack/pyclaw
++
++--- last commit ---
++314fd93 Merge pull request #541 from mandli/add-new-gauges
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++visclaw
++===========
++/Users/rjl/git/clawpack/visclaw
++
++--- last commit ---
++72ee0db Merge pull request #187 from rjleveque/remove_ioff
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++riemann
++===========
++/Users/rjl/git/clawpack/riemann
++
++--- last commit ---
++48a46d3 Merge pull request #113 from rjleveque/shallow_roe_needs_grav
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++geoclaw
++===========
++/Users/rjl/git/clawpack/geoclaw
++
++--- last commit ---
++7edbc79 Merge pull request #227 from rjleveque/gauge_error_message
++
++--- branch and status ---
++## master...origin/master
+diff --git a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
+index 7c7fdda..1ae7006 100644
+--- a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
++++ b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
+@@ -1,2 +1,2 @@
+-7.856413881148975520e+01
+-6.304945901101816474e+01
++7.856413881148978362e+01
++6.304945901101817896e+01
+diff --git a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
+index 9f4a58c..5f56ae2 100644
+--- a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
++++ b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
+@@ -1,2 +1,2 @@
+-7.856413881148984046e+01
+--8.379980507478311524e-03
++7.856413881148981204e+01
++-8.379980507470463635e-03
+diff --git a/tests/acoustics_3d_heterogeneous/regression_data/claw_git_diffs.txt b/tests/acoustics_3d_heterogeneous/regression_data/claw_git_diffs.txt
+new file mode 100644
+index 0000000..badc61f
+--- /dev/null
++++ b/tests/acoustics_3d_heterogeneous/regression_data/claw_git_diffs.txt
+@@ -0,0 +1,260 @@
++Clawpack git diffs...
++
++===========
++classic
++===========
++/Users/rjl/git/clawpack/classic
++
++diff --git a/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt b/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt
++index 9004b01..7b79061 100644
++--- a/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt
+++++ b/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt
++@@ -1,3 +1,3 @@
++-2.059544020560253041e-01
++--8.493110174680327961e-18
++-1.741702529746755355e-17
+++2.059544020560256095e-01
+++0.000000000000000000e+00
+++-1.553119612085485102e-17
++diff --git a/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt b/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt
++index ab3f1a2..84948d2 100644
++--- a/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt
+++++ b/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt
++@@ -1,3 +1,3 @@
++-2.329486088666313237e-01
++-6.438636245258838597e-17
++-8.431535363558756435e-17
+++2.329486088666314347e-01
+++6.938893903907228378e-17
+++7.025630077706068732e-17
++diff --git a/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt b/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt
++new file mode 100644
++index 0000000..b1d6b21
++--- /dev/null
+++++ b/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt
++@@ -0,0 +1,67 @@
+++Clawpack git diffs...
+++
+++===========
+++classic
+++===========
+++/Users/rjl/git/clawpack/classic
+++
+++diff --git a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
+++index 7c7fdda..1ae7006 100644
+++--- a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
++++++ b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
+++@@ -1,2 +1,2 @@
+++-7.856413881148975520e+01
+++-6.304945901101816474e+01
++++7.856413881148978362e+01
++++6.304945901101817896e+01
+++diff --git a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
+++index 9f4a58c..5f56ae2 100644
+++--- a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
++++++ b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
+++@@ -1,2 +1,2 @@
+++-7.856413881148984046e+01
+++--8.379980507478311524e-03
++++7.856413881148981204e+01
++++-8.379980507470463635e-03
+++
+++
+++===========
+++amrclaw
+++===========
+++/Users/rjl/git/clawpack/amrclaw
+++
+++
+++
+++===========
+++clawutil
+++===========
+++/Users/rjl/git/clawpack/clawutil
+++
+++
+++
+++===========
+++pyclaw
+++===========
+++/Users/rjl/git/clawpack/pyclaw
+++
+++
+++
+++===========
+++visclaw
+++===========
+++/Users/rjl/git/clawpack/visclaw
+++
+++
+++
+++===========
+++riemann
+++===========
+++/Users/rjl/git/clawpack/riemann
+++
+++
+++
+++===========
+++geoclaw
+++===========
+++/Users/rjl/git/clawpack/geoclaw
+++
++diff --git a/tests/acoustics_1d_heterogeneous/regression_data/claw_git_status.txt b/tests/acoustics_1d_heterogeneous/regression_data/claw_git_status.txt
++new file mode 100644
++index 0000000..552b06b
++--- /dev/null
+++++ b/tests/acoustics_1d_heterogeneous/regression_data/claw_git_status.txt
++@@ -0,0 +1,92 @@
+++Clawpack Git Status 
+++Diffs can be found in /Users/rjl/git/clawpack/classic/tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt
+++
+++Sat, 08 Oct 2016 20:32:11 PDT
+++$CLAW = /Users/rjl/git/clawpack
+++$FC = gfortran
+++
+++
+++===========
+++classic
+++===========
+++/Users/rjl/git/clawpack/classic
+++
+++--- last commit ---
+++05d030e Merge pull request #73 from mandli/new-test-location
+++
+++--- branch and status ---
+++## master...origin/master
+++ M tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
+++ M tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
+++
+++
+++===========
+++amrclaw
+++===========
+++/Users/rjl/git/clawpack/amrclaw
+++
+++--- last commit ---
+++cab6449 Merge pull request #174 from rjleveque/test_merge_fixProperNesting
+++
+++--- branch and status ---
+++## master...origin/master
+++
+++
+++===========
+++clawutil
+++===========
+++/Users/rjl/git/clawpack/clawutil
+++
+++--- last commit ---
+++bbc12d6 Merge pull request #105 from mandli/gauge-test-update
+++
+++--- branch and status ---
+++## master...origin/master
+++
+++
+++===========
+++pyclaw
+++===========
+++/Users/rjl/git/clawpack/pyclaw
+++
+++--- last commit ---
+++314fd93 Merge pull request #541 from mandli/add-new-gauges
+++
+++--- branch and status ---
+++## master...origin/master
+++
+++
+++===========
+++visclaw
+++===========
+++/Users/rjl/git/clawpack/visclaw
+++
+++--- last commit ---
+++72ee0db Merge pull request #187 from rjleveque/remove_ioff
+++
+++--- branch and status ---
+++## master...origin/master
+++
+++
+++===========
+++riemann
+++===========
+++/Users/rjl/git/clawpack/riemann
+++
+++--- last commit ---
+++48a46d3 Merge pull request #113 from rjleveque/shallow_roe_needs_grav
+++
+++--- branch and status ---
+++## master...origin/master
+++
+++
+++===========
+++geoclaw
+++===========
+++/Users/rjl/git/clawpack/geoclaw
+++
+++--- last commit ---
+++7edbc79 Merge pull request #227 from rjleveque/gauge_error_message
+++
+++--- branch and status ---
+++## master...origin/master
++diff --git a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
++index 7c7fdda..1ae7006 100644
++--- a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
+++++ b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
++@@ -1,2 +1,2 @@
++-7.856413881148975520e+01
++-6.304945901101816474e+01
+++7.856413881148978362e+01
+++6.304945901101817896e+01
++diff --git a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
++index 9f4a58c..5f56ae2 100644
++--- a/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
+++++ b/tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
++@@ -1,2 +1,2 @@
++-7.856413881148984046e+01
++--8.379980507478311524e-03
+++7.856413881148981204e+01
+++-8.379980507470463635e-03
++
++
++===========
++amrclaw
++===========
++/Users/rjl/git/clawpack/amrclaw
++
++
++
++===========
++clawutil
++===========
++/Users/rjl/git/clawpack/clawutil
++
++
++
++===========
++pyclaw
++===========
++/Users/rjl/git/clawpack/pyclaw
++
++
++
++===========
++visclaw
++===========
++/Users/rjl/git/clawpack/visclaw
++
++
++
++===========
++riemann
++===========
++/Users/rjl/git/clawpack/riemann
++
++
++
++===========
++geoclaw
++===========
++/Users/rjl/git/clawpack/geoclaw
++
+diff --git a/tests/acoustics_3d_heterogeneous/regression_data/claw_git_status.txt b/tests/acoustics_3d_heterogeneous/regression_data/claw_git_status.txt
+new file mode 100644
+index 0000000..5df696a
+--- /dev/null
++++ b/tests/acoustics_3d_heterogeneous/regression_data/claw_git_status.txt
+@@ -0,0 +1,96 @@
++Clawpack Git Status 
++Diffs can be found in /Users/rjl/git/clawpack/classic/tests/acoustics_3d_heterogeneous/regression_data/claw_git_diffs.txt
++
++Sat, 08 Oct 2016 20:33:54 PDT
++$CLAW = /Users/rjl/git/clawpack
++$FC = gfortran
++
++
++===========
++classic
++===========
++/Users/rjl/git/clawpack/classic
++
++--- last commit ---
++05d030e Merge pull request #73 from mandli/new-test-location
++
++--- branch and status ---
++## master...origin/master
++A  tests/acoustics_1d_heterogeneous/regression_data/claw_git_diffs.txt
++A  tests/acoustics_1d_heterogeneous/regression_data/claw_git_status.txt
++M  tests/acoustics_1d_heterogeneous/regression_data/regression_data_test2.txt
++M  tests/acoustics_1d_heterogeneous/regression_data/regression_data_test3.txt
++ M tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt
++ M tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt
++
++
++===========
++amrclaw
++===========
++/Users/rjl/git/clawpack/amrclaw
++
++--- last commit ---
++cab6449 Merge pull request #174 from rjleveque/test_merge_fixProperNesting
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++clawutil
++===========
++/Users/rjl/git/clawpack/clawutil
++
++--- last commit ---
++bbc12d6 Merge pull request #105 from mandli/gauge-test-update
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++pyclaw
++===========
++/Users/rjl/git/clawpack/pyclaw
++
++--- last commit ---
++314fd93 Merge pull request #541 from mandli/add-new-gauges
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++visclaw
++===========
++/Users/rjl/git/clawpack/visclaw
++
++--- last commit ---
++72ee0db Merge pull request #187 from rjleveque/remove_ioff
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++riemann
++===========
++/Users/rjl/git/clawpack/riemann
++
++--- last commit ---
++48a46d3 Merge pull request #113 from rjleveque/shallow_roe_needs_grav
++
++--- branch and status ---
++## master...origin/master
++
++
++===========
++geoclaw
++===========
++/Users/rjl/git/clawpack/geoclaw
++
++--- last commit ---
++7edbc79 Merge pull request #227 from rjleveque/gauge_error_message
++
++--- branch and status ---
++## master...origin/master
+diff --git a/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt b/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt
+index 9004b01..7b79061 100644
+--- a/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt
++++ b/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test2.txt
+@@ -1,3 +1,3 @@
+-2.059544020560253041e-01
+--8.493110174680327961e-18
+-1.741702529746755355e-17
++2.059544020560256095e-01
++0.000000000000000000e+00
++-1.553119612085485102e-17
+diff --git a/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt b/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt
+index ab3f1a2..84948d2 100644
+--- a/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt
++++ b/tests/acoustics_3d_heterogeneous/regression_data/regression_data_test3.txt
+@@ -1,3 +1,3 @@
+-2.329486088666313237e-01
+-6.438636245258838597e-17
+-8.431535363558756435e-17
++2.329486088666314347e-01
++6.938893903907228378e-17
++7.025630077706068732e-17
+
+
+===========
+amrclaw
+===========
+/Users/rjl/git/clawpack/amrclaw
+
+
+
+===========
+clawutil
+===========
+/Users/rjl/git/clawpack/clawutil
+
+
+
+===========
+pyclaw
+===========
+/Users/rjl/git/clawpack/pyclaw
+
+
+
+===========
+visclaw
+===========
+/Users/rjl/git/clawpack/visclaw
+
+
+
+===========
+riemann
+===========
+/Users/rjl/git/clawpack/riemann
+
+
+
+===========
+geoclaw
+===========
+/Users/rjl/git/clawpack/geoclaw
+
