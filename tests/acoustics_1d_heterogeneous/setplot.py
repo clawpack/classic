@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 def setplot(plotdata):
     plotdata.clearfigures()
 
