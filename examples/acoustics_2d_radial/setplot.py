@@ -18,7 +18,7 @@ else:
 
 
 #--------------------------
-def setplot(plotdata):
+def setplot(plotdata=None):
 #--------------------------
     
     """ 
@@ -27,6 +27,10 @@ def setplot(plotdata):
     Output: a modified version of plotdata.
     
     """ 
+
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
 
 
     from clawpack.visclaw import colormaps

@@ -1,5 +1,20 @@
 from __future__ import absolute_import
-def setplot(plotdata):
+
+#--------------------------
+def setplot(plotdata=None):
+#--------------------------
+    
+    """ 
+    Specify what is to be plotted at each frame.
+    Input:  plotdata, an instance of clawpack.visclaw.data.ClawPlotData.
+    Output: a modified version of plotdata.
+    
+    """ 
+
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
+
     plotdata.clearfigures()
 
     # Figures corresponding to Figure 9.5 of LeVeque, "Finite Volume
