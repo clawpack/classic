@@ -2,6 +2,7 @@
 Regression tests for a 1D heterogeneous acoustics test
 """
 
+from __future__ import absolute_import
 import sys
 import unittest
 
