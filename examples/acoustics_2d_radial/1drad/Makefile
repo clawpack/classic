@@ -29,7 +29,7 @@ FFLAGS =
 # package sources for this program:
 # ---------------------------------
 
-include $(CLAW)/classic/src/2d/Makefile.classic_2d
+include $(CLAW)/classic/src/1d/Makefile.classic_1d
 
 # ---------------------------------------
 # package sources specifically to exclude
