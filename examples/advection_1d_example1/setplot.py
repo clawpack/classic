@@ -10,6 +10,7 @@ function setplot is called to set the plot parameters.
 from __future__ import absolute_import
 from __future__ import print_function
 from clawpack.clawutil.data import ClawData
+
 probdata = ClawData()
 probdata.read('setprob.data', force=True)
 print("Parameters: u = %g, beta = %g" % (probdata.u, probdata.beta))
@@ -28,7 +29,7 @@ def qtrue(x,t):
     
 
 #--------------------------
-def setplot(plotdata):
+def setplot(plotdata=None):
 #--------------------------
     
     """ 
@@ -38,6 +39,9 @@ def setplot(plotdata):
     
     """ 
 
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
