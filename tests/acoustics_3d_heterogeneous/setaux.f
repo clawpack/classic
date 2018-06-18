@@ -16,9 +16,9 @@ c
       common /comaux/ z1,c1,z2,c2
 
 
-      do  k = 1-mbc,mz+mbc
-	 do j = 1-mbc,my+mbc
-	    do i = 1-mbc,mx+mbc
+      do k = 1-mbc,mz+mbc
+      do j = 1-mbc,my+mbc
+      do i = 1-mbc,mx+mbc
                zcell = zlower + (k-0.5d0)*dz
                if (zcell .lt. 0.d0) then
                   aux(1,i,j,k) = z1
