@@ -278,13 +278,13 @@ c        # time steps since the last output.
 
 c        # iframe is the frame number used to form file names in out1
          iframe = n/nstepout
-	 if (iframe*nstepout .eq. n) then
+         if (iframe*nstepout .eq. n) then
             call out1(meqn,mbc,mx,xlower,dx,q,tend,iframe,
      &                aux,maux,outaux_always)
             write(6,601) iframe,tend
             write(10,1010) tend,info,dtv(3),dtv(4),dtv(5),
      &           cflv(3),cflv(4),nv(2)
-	    endif
+         endif
 c
 c        # formats for writing out information about this call to claw:
 c
