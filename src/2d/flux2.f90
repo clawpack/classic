@@ -57,6 +57,8 @@
 !f2py external rpn2, rpt2
 !f2py intent(callback) rpn2,rpt2
 
+    use abl_module, only: abl_type
+
     implicit double precision (a-h,o-z)
     integer num_aux
     external rpn2,rpt2
@@ -71,6 +73,7 @@
     dimension   gadd(num_eqn, 2, 1-num_ghost:maxm+num_ghost)
 
     dimension dtdx1d(1-num_ghost:maxm+num_ghost)
+
     dimension aux1(num_aux,1-num_ghost:maxm+num_ghost)
     dimension aux2(num_aux,1-num_ghost:maxm+num_ghost)
     dimension aux3(num_aux,1-num_ghost:maxm+num_ghost)
@@ -84,7 +87,7 @@
 
     limit = .false.
     do mw=1,num_waves
-        if (mthlim(mw) > 0) limit = .TRUE. 
+        if (mthlim(mw) > 0) limit = .TRUE.
     end do
 
 !     # initialize flux increments:
@@ -109,6 +112,17 @@
 
     call rpn2(ixy,maxm,num_eqn,num_waves,num_aux,num_ghost,mx,q1d,q1d, &
     aux2,aux2,wave,s,amdq,apdq)
+
+    ! apply ABL scaling to propagation speed and update fluctuations if needed
+    if (abl_type .ne. 0) then
+        do mw=1,num_waves
+            s(mw,:) = s(mw,:)*aux2(num_aux-2+ixy,:)
+        end do
+        do m=1,num_eqn
+            amdq(m,:) = amdq(m,:)*aux2(num_aux-2+ixy,:)
+            apdq(m,:) = apdq(m,:)*aux2(num_aux-2+ixy,:)
+        end do
+    end if
 
 !     # Set qadd for the donor-cell upwind method (Godunov)
     do i = 1, mx+1
@@ -146,7 +160,6 @@
 !     # Second order corrections:
     if (use_fwave.eqv. .FALSE. ) then
         do i = 2-num_ghost, mx+num_ghost
-        !            # modified in Version 4.3 to use average only in cqxx, not transverse
             dtdxave = 0.5d0 * (dtdx1d(i-1) + dtdx1d(i))
             do m = 1, num_eqn
                 cqxx(m,i) = 0.d0
@@ -204,6 +217,18 @@
     call rpt2(ixy,1,maxm,num_eqn,num_waves,num_aux,num_ghost,mx,q1d,q1d, &
     aux1,aux2,aux3,amdq,bmasdq,bpasdq)
 
+!     # Adjust for ABL if needed
+    if (abl_type .ne. 0) then
+        do m=1,num_eqn
+            bmasdq(m,2-num_ghost:mx+num_ghost) = &
+                              bmasdq(m,2-num_ghost:mx+num_ghost) * &
+                              aux2(num_aux+1-ixy,1-num_ghost:mx+num_ghost-1)
+            bpasdq(m,2-num_ghost:mx+num_ghost) = &
+                              bpasdq(m,2-num_ghost:mx+num_ghost) * &
+                              aux3(num_aux+1-ixy,1-num_ghost:mx+num_ghost-1)
+        end do
+    end if
+
 !     # modify flux below and above by B^- A^- Delta q and  B^+ A^- Delta q:
     do i = 1, mx+1
         ! Having two inner loops here allows traversal of gadd in memory-contiguous order
@@ -214,11 +239,18 @@
             gadd(m,2,i-1) = -0.5d0*dtdx1d(i-1) * bpasdq(m,i)
         end do
     end do
-     
 
 !     # split the right-going flux difference into down-going and up-going:
     call rpt2(ixy,2,maxm,num_eqn,num_waves,num_aux,num_ghost,mx,q1d,q1d, &
     aux1,aux2,aux3,apdq,bmasdq,bpasdq)
+
+!     # Adjust for ABL if needed
+    if (abl_type .ne. 0) then
+        do m=1,num_eqn
+            bmasdq(m,:) = bmasdq(m,:) * aux2(num_aux+1-ixy,:)
+            bpasdq(m,:) = bpasdq(m,:) * aux3(num_aux+1-ixy,:)
+        end do
+    end if
 
 !     # modify flux below and above by B^- A^+ Delta q and  B^+ A^+ Delta q:
     do i = 1, mx+1
