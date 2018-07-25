@@ -70,11 +70,12 @@ def setplot(plotdata=None):
     plotitem.add_colorbar = True
 
     def plot_original_domain(current_data):
-        from matplotlib.pyplot import gca
+        from matplotlib.pyplot import gca, text
         ax = gca()
         x = [x1,x2,x2,x1,x1]
         y = [y1,y1,y2,y2,y1]
         ax.plot(x, y, '--k')
+        text(-0.6,1.05,'Absorbing Boundary Layer')
 
     plotaxes.afteraxes = plot_original_domain
 
