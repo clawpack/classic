@@ -126,7 +126,7 @@ def setplot(plotdata=None):
 
     def make_legend(current_data):
         import matplotlib.pyplot as plt
-        plt.legend(('2d data', '1d reference solution'))
+        plt.legend(('2d data (interior only)', '1d reference solution'))
 
     plotaxes.afteraxes = make_legend
 
