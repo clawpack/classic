@@ -41,10 +41,10 @@ def setplot(plotdata=None):
     abldata.read(plotdata.outdir + '/abl.data', force=True)
     clawdata = ClawData()
     clawdata.read(plotdata.outdir + '/claw.data', force=True)
-    clawdata.lower[0] += abldata.depth_lower[0]
-    clawdata.upper[0] -= abldata.depth_upper[0]
-    clawdata.lower[1] += abldata.depth_lower[1]
-    clawdata.upper[1] -= abldata.depth_upper[1]
+    x1 = clawdata.lower[0] + abldata.depth_lower[0]
+    x2 = clawdata.upper[0] - abldata.depth_upper[0]
+    y1 = clawdata.lower[1] + abldata.depth_lower[1]
+    y2 = clawdata.upper[1] - abldata.depth_upper[1]
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
@@ -72,10 +72,8 @@ def setplot(plotdata=None):
     def plot_original_domain(current_data):
         from matplotlib.pyplot import gca
         ax = gca()
-        x = [clawdata.lower[0], clawdata.upper[0], clawdata.upper[0], \
-             clawdata.lower[0], clawdata.lower[0]]
-        y = [clawdata.lower[1], clawdata.lower[1], clawdata.upper[1], \
-             clawdata.upper[1], clawdata.lower[1]]
+        x = [x1,x2,x2,x1,x1]
+        y = [y1,y1,y2,y2,y1]
         ax.plot(x, y, '--k')
 
     plotaxes.afteraxes = plot_original_domain
@@ -102,10 +100,10 @@ def setplot(plotdata=None):
         x = current_data.x
         y = current_data.y
         r = sqrt(x**2 + y**2)
-        r = masked_where(x < clawdata.lower[0], r)
-        r = masked_where(x > clawdata.upper[0], r)
-        r = masked_where(y < clawdata.lower[1], r)
-        r = masked_where(y > clawdata.upper[1], r)
+        r = masked_where(x < x1, r)
+        r = masked_where(x > x2, r)
+        r = masked_where(y < y1, r)
+        r = masked_where(y > y2, r)
         q = current_data.q
         p = MaskedArray(q[0,:,:], mask=r.mask)
         return r,p
