@@ -3,9 +3,7 @@ xclaw
 *.mod
 *~
 .data
-.data_abl
 .output
-.output_abl
 _output/*
 _output
 _plots/*
