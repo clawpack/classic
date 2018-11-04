@@ -52,8 +52,8 @@ MODULES = \
 SOURCES = \
   qinit.f \
   setprob.f \
-  $(CLAW)/riemann/src/rpn2_acoustics.f90 \
-  $(CLAW)/riemann/src/rpt2_acoustics.f90 
+  $(CLAW)/riemann/riemann/rpn2_acoustics.f90 \
+  $(CLAW)/riemann/riemann/rpt2_acoustics.f90 
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
