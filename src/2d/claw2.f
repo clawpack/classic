@@ -661,7 +661,7 @@ c            # unsplit version
 c             
              call step2(maxm,meqn,mwaves,maux,mbc,mx,my,
      &                  work(i0qwrk1),q,aux,
-     &                  dx,dy,dt,method,mthlim,cfl,
+     &                  xlower,ylower,dx,dy,dt,method,mthlim,cfl,
      &                  work(i0qadd),work(i0fadd),work(i0gadd),
      &                  work(i0q1d),work(i0dtdx1),work(i0dtdy1),
      &                  work(i0aux1),work(i0aux2),work(i0aux3),

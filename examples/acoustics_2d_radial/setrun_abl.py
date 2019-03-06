@@ -97,7 +97,7 @@ def setrun(claw_pkg='classic'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 0
+    clawdata.num_aux = 2
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 0

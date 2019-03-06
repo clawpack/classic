@@ -67,50 +67,81 @@ contains
 
   end subroutine initialize
 
-  subroutine set_scaling_factor(mbc,mx,my,xlower,ylower,dx,dy,maux,aux)
+  subroutine set_scaling_factor(xlower, ylower, dx, dy, mx, my, num_ghost, &
+                                abl_center, abl_edge, &
+                                i_abl_lower, i_abl_upper, j_abl_lower, j_abl_upper)
 
     implicit none
 
-    integer, intent(in) :: mbc, mx, my, maux
+    integer, intent(in) :: mx, my, num_ghost
     real(kind=8), intent(in) :: xlower, ylower, dx, dy
-    real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
+    integer, intent(out) :: i_abl_lower, i_abl_upper, j_abl_lower, j_abl_upper
+    real(kind=8), intent(out) :: abl_center(1-num_ghost:mx+num_ghost, &
+                                            1-num_ghost:my+num_ghost, 2)
+    real(kind=8), intent(out) :: abl_edge(1-num_ghost:mx+num_ghost, &
+                                          1-num_ghost:my+num_ghost, 2)
 
     integer :: i, j
-    real(kind=8) :: xcenter, ycenter, lower(2)
+    real(kind=8) :: xcenter, ycenter, xedge, yedge
 
     ! initialize module if needed
     if (.not. initialized) then
       call initialize()
     end if
 
-    if (abl_type == 0) then
-      return
-    end if
+    ! determine which indices are in the layer
+    i_abl_lower = int((1.d0 + 1.d-14)*(xpos(1)-xlower)/dx)
+    i_abl_upper = int((1.d0 + 1.d-14)*(xpos(2)-xlower)/dx)
+    j_abl_lower = int((1.d0 + 1.d-14)*(ypos(1)-ylower)/dy)
+    j_abl_upper = int((1.d0 + 1.d-14)*(ypos(2)-ylower)/dy)
 
-    ! Loop over all cell edges
-    do j=1-mbc,my+mbc
-
+    ! Loop over all cells
+    do j=1-num_ghost,my+num_ghost
       ycenter = ylower + (j-0.5d0)*dy
 
-      do i=1-mbc,mx+mbc
-
+      do i=1-num_ghost,mx+num_ghost
         xcenter = xlower + (i-0.5d0)*dx
 
         ! determine lower cell edge locations
         ! constrained to the computational domain without ghost cells
-        lower(1) = max(xcenter-0.5d0*dx,xpos(1)-xdepth(1))
-        lower(1) = min(lower(1),xpos(2)+xdepth(2)-dx)
-        lower(2) = max(ycenter-0.5d0*dy,ypos(1)-ydepth(1))
-        lower(2) = min(lower(2),ypos(2)+ydepth(2)-dy)
+        xedge = max(xcenter-0.5d0*dx,xpos(1)-xdepth(1))
+        xedge = min(xedge,xpos(2)+xdepth(2)-dx)
+        yedge = max(ycenter-0.5d0*dy,ypos(1)-ydepth(1))
+        yedge = min(yedge,ypos(2)+ydepth(2)-dy)
 
-        ! Calculate inverse of Jacobian 1/(1 + g'(x_k-1/2)) & 1/(1 + g'(y_k-1/2))
-        aux(maux-1,i,j) = 1.d0/(1.d0 + gp(lower(1),1))
-        aux(maux,i,j) = 1.d0/(1.d0 + gp(lower(2),2))
+        ! Calculate inverse of Jacobian at cell edges
+        abl_edge(i,j,1) = 1.d0/(1.d0 + gp(xedge,1))
+        abl_edge(i,j,2) = 1.d0/(1.d0 + gp(yedge,2))
+
+        ! Calculate cell width ratio at cell centers
+        ! (use inverse of Jacobian for methods that dont have g)
+        abl_center(i,j,1) = 1.d0/(1.d0 + gp(xcenter,1))
+        abl_center(i,j,2) = 1.d0/(1.d0 + gp(ycenter,2))
 
       end do
+
     end do
 
   end subroutine set_scaling_factor
+
+  subroutine scale_for_abl(abl_factor,num_ghost,maxm,mx,i_abl_lower,i_abl_upper, &
+                           scaled_value,offset)
+
+    implicit none
+    integer, intent(in) :: num_ghost, maxm, mx, i_abl_lower, i_abl_upper, offset
+    double precision, intent(in) :: abl_factor(1-num_ghost:maxm+num_ghost)
+    double precision, intent(inout) :: scaled_value(1-num_ghost:maxm+num_ghost)
+
+    integer :: i
+
+    do i = 1-num_ghost, i_abl_lower
+      scaled_value(i) = abl_factor(i-offset)*scaled_value(i)
+    end do
+    do i = i_abl_upper, mx+num_ghost
+      scaled_value(i) = abl_factor(i-offset)*scaled_value(i)
+    end do
+
+  end subroutine scale_for_abl
 
   function gp(z,direction)
 
@@ -151,5 +182,7 @@ contains
     end if
 
   end function gp
+
+
 
 end module abl_module
