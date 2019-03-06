@@ -101,14 +101,10 @@
 
 !   compute abl scaling factors if needed
     if (abl_type /= 0) then
-      call set_scaling_factor(xlower,ylower,dx,dy,mx,my,num_ghost, &
-                              abl_center,abl_edge, &
-                              i_abl_lower,i_abl_upper,j_abl_lower,j_abl_upper)
+        call set_scaling_factor(xlower,ylower,dx,dy,mx,my,num_ghost, &
+                                abl_center,abl_edge, &
+                                i_abl_lower,i_abl_upper,j_abl_lower,j_abl_upper)
     else
-        i_abl_lower = -num_ghost
-        j_abl_lower = -num_ghost
-        i_abl_upper = maxm+num_ghost
-        j_abl_upper = maxm+num_ghost
         abl_center(:,:,:) = 1.d0
     end if
 
