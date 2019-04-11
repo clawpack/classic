@@ -11,3 +11,12 @@ _plots
 *.data
 *.pyc
 .plots
+
+# log files
+*.log
+
+# py3k cache directories
+__pycache__
+
+# ipython
+.ipynb_checkpoints
