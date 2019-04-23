@@ -68,7 +68,7 @@ contains
   end subroutine initialize
 
   subroutine set_scaling_factor(xlower, ylower, dx, dy, mx, my, num_ghost, &
-                                abl_center, abl_edge, &
+                                ablX_M, ablX_J, ablX_R, ablY_M, ablY_J, ablY_R, &
                                 i_abl_lower, i_abl_upper, j_abl_lower, j_abl_upper)
 
     implicit none
@@ -76,10 +76,12 @@ contains
     integer, intent(in) :: mx, my, num_ghost
     real(kind=8), intent(in) :: xlower, ylower, dx, dy
     integer, intent(out) :: i_abl_lower, i_abl_upper, j_abl_lower, j_abl_upper
-    real(kind=8), intent(out) :: abl_center(1-num_ghost:mx+num_ghost, &
-                                            1-num_ghost:my+num_ghost, 2)
-    real(kind=8), intent(out) :: abl_edge(1-num_ghost:mx+num_ghost, &
-                                          1-num_ghost:my+num_ghost, 2)
+    real(kind=8), intent(out) :: ablX_M(1-num_ghost:mx+num_ghost)
+    real(kind=8), intent(out) :: ablX_J(1-num_ghost:mx+num_ghost)
+    real(kind=8), intent(out) :: ablX_R(1-num_ghost:mx+num_ghost)
+    real(kind=8), intent(out) :: ablY_M(1-num_ghost:my+num_ghost)
+    real(kind=8), intent(out) :: ablY_J(1-num_ghost:my+num_ghost)
+    real(kind=8), intent(out) :: ablY_R(1-num_ghost:my+num_ghost)
 
     integer :: i, j
     real(kind=8) :: xcenter, ycenter, xedge, yedge
@@ -89,59 +91,113 @@ contains
       call initialize()
     end if
 
-    ! determine which indices are in the layer
-    i_abl_lower = int((1.d0 + 1.d-14)*(xpos(1)-xlower)/dx)
-    i_abl_upper = int((1.d0 + 1.d-14)*(xpos(2)-xlower)/dx)
-    j_abl_lower = int((1.d0 + 1.d-14)*(ypos(1)-ylower)/dy)
-    j_abl_upper = int((1.d0 + 1.d-14)*(ypos(2)-ylower)/dy)
+    ! x direction
 
-    ! Loop over all cells
-    do j=1-num_ghost,my+num_ghost
+    ! determine which indices are in the layer and loop over those
+    i_abl_lower = int((1.d0 + 1.d-14)*(xpos(1)-xlower)/dx)
+    i_abl_upper = 1 + int((1.d0 + 1.d-14)*(xpos(2)-xlower)/dx)
+
+    do i=1-num_ghost,i_abl_lower
+
+      xcenter = xlower + (i-0.5d0)*dx
+
+      ! Calculate inverse of Jacobian at cell edges
+      xedge = max(xcenter-0.5d0*dx, xpos(1)-xdepth(1))
+      xedge = min(xedge, xpos(2)+xdepth(2))
+      ablX_J(i) = 1.d0/(1.d0 + gp(xedge,1))
+
+      ! Calculate grid map scaling and ratio at cell centers
+      xcenter = max(xcenter, xpos(1)-xdepth(1)+0.5d0*dx)
+      xcenter = min(xcenter, xpos(2)+xdepth(2)-0.5d0*dx)
+      if (abl_type == TRIG) then
+        xedge = min(xedge, xpos(2)+xdepth(2)-dx)
+        ablX_M(i) = 1.d0/(1.d0 + (g(xedge+dx,1)-g(xedge,1))/dx)
+        ablX_R(i) = ablX_M(i)*(1.d0 + gp(xcenter,1))
+      else
+        ablX_M(i) = 1.d0/(1.d0 + gp(xcenter,1))
+        ablX_R(i) = 1.d0
+      end if
+
+    end do
+
+    do i=i_abl_upper,mx+num_ghost
+
+      xcenter = xlower + (i-0.5d0)*dx
+
+      ! Calculate inverse of Jacobian at cell edges
+      xedge = max(xcenter-0.5d0*dx, xpos(1)-xdepth(1))
+      xedge = min(xedge, xpos(2)+xdepth(2))
+      ablX_J(i) = 1.d0/(1.d0 + gp(xedge,1))
+
+      ! Calculate grid map scaling and ratio at cell centers
+      xcenter = max(xcenter, xpos(1)-xdepth(1)+0.5d0*dx)
+      xcenter = min(xcenter, xpos(2)+xdepth(2)-0.5d0*dx)
+      if (abl_type == TRIG) then
+        xedge = min(xedge, xpos(2)+xdepth(2)-dx)
+        ablX_M(i) = 1.d0/(1.d0 + (g(xedge+dx,1)-g(xedge,1))/dx)
+        ablX_R(i) = ablX_M(i)*(1.d0 + gp(xcenter,1))
+      else
+        ablX_M(i) = 1.d0/(1.d0 + gp(xcenter,1))
+        ablX_R(i) = 1.d0
+      end if
+
+    end do
+
+
+    ! y direction
+
+    ! determine which indices are in the layer and loop over those
+    j_abl_lower = int((1.d0 + 1.d-14)*(ypos(1)-ylower)/dy)
+    j_abl_upper = 1 + int((1.d0 + 1.d-14)*(ypos(2)-ylower)/dy)
+
+    do j=1-num_ghost,j_abl_lower
+
       ycenter = ylower + (j-0.5d0)*dy
 
-      do i=1-num_ghost,mx+num_ghost
-        xcenter = xlower + (i-0.5d0)*dx
+      ! Calculate inverse of Jacobian at cell edges
+      yedge = max(ycenter-0.5d0*dy, ypos(1)-ydepth(1))
+      yedge = min(yedge, ypos(2)+ydepth(2))
+      ablY_J(j) = 1.d0/(1.d0 + gp(yedge,2))
 
-        ! determine lower cell edge locations
-        ! constrained to the computational domain without ghost cells
-        xedge = max(xcenter-0.5d0*dx,xpos(1)-xdepth(1))
-        xedge = min(xedge,xpos(2)+xdepth(2)-dx)
-        yedge = max(ycenter-0.5d0*dy,ypos(1)-ydepth(1))
-        yedge = min(yedge,ypos(2)+ydepth(2)-dy)
-
-        ! Calculate inverse of Jacobian at cell edges
-        abl_edge(i,j,1) = 1.d0/(1.d0 + gp(xedge,1))
-        abl_edge(i,j,2) = 1.d0/(1.d0 + gp(yedge,2))
-
-        ! Calculate cell width ratio at cell centers
-        ! (use inverse of Jacobian for methods that dont have g)
-        abl_center(i,j,1) = 1.d0/(1.d0 + gp(xcenter,1))
-        abl_center(i,j,2) = 1.d0/(1.d0 + gp(ycenter,2))
-
-      end do
+      ! Calculate grid map scaling and ratio at cell centers
+      ycenter = max(ycenter, ypos(1)-ydepth(1)+0.5d0*dy)
+      ycenter = min(ycenter, ypos(2)+ydepth(2)-0.5d0*dy)
+      if (abl_type == TRIG) then
+        yedge = min(yedge, ypos(2)+ydepth(2)-dy)
+        ablY_M(j) = 1.d0/(1.d0 + (g(yedge+dy,2)-g(yedge,2))/dy)
+        ablY_R(j) = ablY_M(j)*(1.d0 + gp(ycenter,2))
+      else
+        ablY_M(j) = 1.d0/(1.d0 + gp(ycenter,2))
+        ablY_R(j) = 1.d0
+      end if
 
     end do
+
+    do j=j_abl_upper,my+num_ghost
+
+      ycenter = ylower + (j-0.5d0)*dy
+
+      ! Calculate inverse of Jacobian at cell edges
+      yedge = max(ycenter-0.5d0*dy, ypos(1)-ydepth(1))
+      yedge = min(yedge, ypos(2)+ydepth(2))
+      ablY_J(j) = 1.d0/(1.d0 + gp(yedge,2))
+
+      ! Calculate grid map scaling and ratio at cell centers
+      ycenter = max(ycenter, ypos(1)-ydepth(1)+0.5d0*dy)
+      ycenter = min(ycenter, ypos(2)+ydepth(2)-0.5d0*dy)
+      if (abl_type == TRIG) then
+        yedge = min(yedge, ypos(2)+ydepth(2)-dy)
+        ablY_M(j) = 1.d0/(1.d0 + (g(yedge+dy,2)-g(yedge,2))/dy)
+        ablY_R(j) = ablY_M(j)*(1.d0 + gp(ycenter,2))
+      else
+        ablY_M(j) = 1.d0/(1.d0 + gp(ycenter,2))
+        ablY_R(j) = 1.d0
+      end if
+
+    end do
+
 
   end subroutine set_scaling_factor
-
-  subroutine scale_for_abl(abl_factor,num_ghost,maxm,mx,i_abl_lower,i_abl_upper, &
-                           scaled_value,offset)
-
-    implicit none
-    integer, intent(in) :: num_ghost, maxm, mx, i_abl_lower, i_abl_upper, offset
-    double precision, intent(in) :: abl_factor(1-num_ghost:maxm+num_ghost)
-    double precision, intent(inout) :: scaled_value(1-num_ghost:maxm+num_ghost)
-
-    integer :: i
-
-    do i = 1-num_ghost, i_abl_lower
-      scaled_value(i) = abl_factor(i-offset)*scaled_value(i)
-    end do
-    do i = i_abl_upper, mx+num_ghost
-      scaled_value(i) = abl_factor(i-offset)*scaled_value(i)
-    end do
-
-  end subroutine scale_for_abl
 
   function gp(z,direction)
 
@@ -182,6 +238,40 @@ contains
     end if
 
   end function gp
+
+  function g(z,direction)
+
+    implicit none
+
+    real(kind=8) :: g, z
+    integer :: direction
+
+    real(kind=8) :: pos(2), depth(2), val, depth_scalar
+
+    g = 0.d0
+    if (direction == 1) then
+      pos = xpos
+      depth = xdepth
+    else if (direction == 2) then
+      pos = ypos
+      depth = ydepth
+    end if
+
+    if (z < pos(1)) then
+      val = (z-pos(1))/depth(1)
+      depth_scalar = depth(1)
+    else if (z > pos(2)) then
+      val = (z-pos(2))/depth(2)
+      depth_scalar = depth(2)
+    else
+      return
+    end if
+
+    if (abl_type == TRIG) then
+      g = depth_scalar*(dtan(PIH*val)/PIH - val)
+    end if
+
+  end function g
 
 
 
