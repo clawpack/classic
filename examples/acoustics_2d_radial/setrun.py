@@ -130,7 +130,8 @@ def setrun(claw_pkg='classic'):
         clawdata.output_t0 = True  # output at initial (or restart) time?
         
 
-    clawdata.output_format = 'ascii'       # 'ascii', 'binary', 'netcdf'
+    clawdata.output_format = 'ascii'      # 'ascii' is only option currently
+
 
 
     # ---------------------------------------------------

@@ -20,6 +20,9 @@ c
       dimension aux(maux,1-mbc:mx+mbc)
       character*10 fname1, fname2, fname3
       logical outaux
+      character(len=8) :: file_format
+
+      file_format = 'ascii'  ! only format currently supported
 
 c     
 c     # Write the results to the file fort.q<iframe>
@@ -94,13 +97,15 @@ c
          close(unit=70)
       endif
 
-      write(60,1000) t,meqn,ngrids,maux,1
+      write(60,1000) t,meqn,ngrids,maux,1,mbc,file_format
 
  1000 format(e26.16,'    time', /,
      &     i5,'                 meqn'/,
      &     i5,'                 ngrids'/,
      &     i5,'                 maux'/,
-     &     i5,'                 ndim'/,/)
+     &     i5,'                 ndim'/,
+     &     i5,'                 nghost'/,
+     &     a10,'                 format'/,/)
 c     
 
       close(unit=50)
