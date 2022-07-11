@@ -23,6 +23,9 @@ c
      &               1-mbc:mz+mbc)
       logical, intent(in) :: outaux
       character*10 fname1, fname2, fname3
+      character(len=8) :: file_format
+
+      file_format = 'ascii'  ! only format currently supported
 
 c
 c
@@ -109,13 +112,15 @@ c
       close(unit=70)
       endif
 
-      write(60,1000) t,meqn,ngrids,maux,3
+      write(60,1000) t,meqn,ngrids,maux,3,mbc,file_format
 
  1000 format(e26.16,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,
      &       i5,'                 maux'/,
-     &       i5,'                 ndim'/,/)
+     &       i5,'                 ndim'/,
+     &       i5,'                 nghost'/,
+     &       a10,'                 format'/,/)
 c
 
       close(unit=50)
