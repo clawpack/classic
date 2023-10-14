@@ -1,6 +1,11 @@
 #get the directory of this makefile
 LIB:=$(CLAW)/classic/src/2d
 
+#list of common modules files for classic 2d codes
+COMMON_MODULES = \
+  $(LIB)/abl_module.f90
+
+
 #list of common source files for classic 2d codes
 COMMON_SOURCES = \
   $(LIB)/qinit.f \
