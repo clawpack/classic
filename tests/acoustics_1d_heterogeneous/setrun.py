@@ -38,7 +38,7 @@ def setrun(claw_pkg='classic'):
     #------------------------------------------------------------------
     # Sample setup to write one line to setprob.data ...
     probdata = rundata.new_UserData(name='probdata',fname='setprob.data')
-    probdata.add_param('ic',    1, 'Initial condition type')
+    probdata.add_param('ic',    3, 'Initial condition type')
     probdata.add_param('beta', 5., 'Gaussian hump width parameter')
     probdata.add_param('rhol', 1., 'Density left of interface')
     probdata.add_param('cl',   1., 'Sound speed left of interface')
