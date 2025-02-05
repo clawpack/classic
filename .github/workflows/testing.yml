@@ -39,7 +39,8 @@ jobs:
         path: classic    
     - name: Install clawpack
       run: |
-        pip install --user -e $CLAW
+        pip install --no-build-isolation --editable $CLAW
+        # pip install --user -e $CLAW
 
     - name: Lint with flake8
       run: |
