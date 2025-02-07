@@ -17,6 +17,10 @@ class Advection2DAnnulusTest(test.ClassicRegressionTest):
 
         # Write out data files
         self.load_rundata()
+
+        self.rundata.clawdata.num_output_times = 2
+        self.rundata.clawdata.tfinal = 0.5
+
         self.write_rundata_objects()
 
         # Run code
