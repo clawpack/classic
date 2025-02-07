@@ -2,7 +2,6 @@
 Regression tests for 3D heterogeneous acoustics problem.
 """
 
-from __future__ import absolute_import
 import sys
 import unittest
 
@@ -17,6 +16,11 @@ class Acoustics3DHeterogeneousTest(test.ClassicRegressionTest):
 
         # Write out data files
         self.load_rundata()
+
+        self.rundata.clawdata.num_cells = [20, 20, 20]
+        self.rundata.clawdata.num_output_times = 2
+        self.rundata.clawdata.tfinal = 1.0
+
         self.write_rundata_objects()
 
         # Run code
