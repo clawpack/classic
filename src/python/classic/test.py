@@ -112,7 +112,7 @@ class ClawpackClassicTestRunner:
         pass
 
 
-    def check_frame(self, frame, indices=(0), regression_path=None, save=False, **kwargs):
+    def check_frame(self, frame, indices=(0,), regression_path=None, save=False, **kwargs):
 
         if not(isinstance(indices, tuple) or isinstance(indices, list)):
             indices = tuple(indices)
@@ -122,7 +122,7 @@ class ClawpackClassicTestRunner:
 
         # Load test output data
         sol = solution.Solution(frame, path=self.temp_path)
-        sol_sums = sol.q[indices, ...].sum(axis=1)
+        sol_sums = [sol.q[i, ...].sum() for i in indices]
 
         # Load regression data
         regression_data = regression_path / f"frame{str(frame).zfill(4)}.txt"
