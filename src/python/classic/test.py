@@ -20,6 +20,7 @@ import numpy as np
 import clawpack.clawutil.runclaw as runclaw
 import clawpack.clawutil.claw_git_status as claw_git_status
 import clawpack.pyclaw.solution as solution
+import clawpack.pyclaw.gauges as gauges
 
 # Clean library files whenever this module is used
 if "CLAW" in os.environ:
