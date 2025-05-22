@@ -134,3 +134,55 @@ class ClawpackClassicTestRunner:
         kwargs.setdefault('rtol', 1e-14)
         kwargs.setdefault('atol', 1e-8)
         np.testing.assert_allclose(sol_sums, regression_sum, **kwargs)
+
+
+    def check_gauge(self, gauge_id, indices=(0), regression_path=None, save=False, **kwargs):
+        r"""Basic test to assert gauge equality
+
+        :Input:
+         - *save* (bool) - If *True* will save the output from this test to 
+           the file *regresion_data.txt*.  Default is *False*.
+         - *indices* (tuple) - Contains indices to compare in the gague 
+           comparison.  Defaults to *(0)*.
+         - *rtol* (float) - Relative tolerance used in the comparison, default 
+           is *1e-14*.  Note that the old *tolerance* input is now synonymous 
+           with this parameter.
+         - *atol* (float) - Absolute tolerance used in the comparison, default
+           is *1e-08*.
+        """
+
+        if not(isinstance(indices, tuple) or isinstance(indices, list)):
+            indices = tuple(indices)
+
+        if not regression_path:
+            regression_path = self.test_path / "regression_data"
+
+        # Load test output data
+        gauge = gauges.GaugeSolution(gauge_id, path=self.temp_path)
+
+        # Load regression data
+        if save:
+            shutil.copy(self.temp_path / f"gauge{str(gauge_id).zfill(5)}.txt",
+                        regression_path)
+            claw_git_status.make_git_status_file(outdir=regression_path)
+        regression_gauge = gauges.GaugeSolution(gauge_id, path=regression_path)
+
+        # Compare data
+        kwargs.setdefault('rtol', 1e-14)
+        kwargs.setdefault('atol', 1e-8)
+        try:
+            for n in indices:
+                np.testing.assert_allclose(gauge.q[n, :],
+                                              regression_gauge.q[n, :], 
+                                              **kwargs)
+        except AssertionError as e:
+            err_msg = "\n".join((e.args[0], 
+                                "Gauge Match Failed for gauge = %s" % gauge_id))
+            err_msg = "\n".join((err_msg, "  failures in fields:"))
+            failure_indices = []
+            for n in indices:
+                if ~np.allclose(gauge.q[n, :], regression_gauge.q[n, :], 
+                                **kwargs):
+                    failure_indices.append(str(n))
+            index_str = ", ".join(failure_indices)
+            raise AssertionError(" ".join((err_msg, index_str)))
