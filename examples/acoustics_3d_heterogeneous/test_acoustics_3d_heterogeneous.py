@@ -1,31 +1,35 @@
 """
-Regression tests for 2D advection on an annulus.
+Regression tests for 3D heterogeneous acoustics problem.
 """
 
-from __future__ import absolute_import
 import sys
 import unittest
 
 import clawpack.classic.test as test
 
 
-class Advection2DAnnulusTest(test.ClassicRegressionTest):
-    r"""Basic test for a 2D advection test case"""
+class Acoustics3DHeterogeneousTest(test.ClassicRegressionTest):
+    r"""Basic test for a 3D heterogeneous acoustics test."""
 
 
     def runTest(self, save=False):
 
         # Write out data files
         self.load_rundata()
+
+        self.rundata.clawdata.num_cells = [20, 20, 20]
+        self.rundata.clawdata.num_output_times = 2
+        self.rundata.clawdata.tfinal = 1.0
+
         self.write_rundata_objects()
 
         # Run code
         self.run_code()
 
         # Perform tests
-        self.check_frame(save=save, frame_num=1, 
+        self.check_frame(save=save, indices=[0, 1, 2], frame_num=1,
                          file_name='regression_data_test2.txt')
-        self.check_frame(save=save, frame_num=2, 
+        self.check_frame(save=save, indices=[0, 1, 2], frame_num=2,
                          file_name='regression_data_test3.txt')
 
         self.success = True
@@ -36,7 +40,7 @@ if __name__=="__main__":
     if len(sys.argv) > 1:
         if bool(sys.argv[1]):
             # Fake the setup and save out output
-            test = Advection2DAnnulusTest()
+            test = Acoustics3DHeterogeneousTest()
             try:
                 test.setUp()
                 test.runTest(save=True)
