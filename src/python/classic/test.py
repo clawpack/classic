@@ -6,32 +6,131 @@ Sends output and result/errors to separate files to simplify checking
 results and looking for errors.
 """
 
+from pathlib import Path
 import os
-import glob
+import sys
+import subprocess
+import importlib
+import inspect
+import shutil
+import pytest
 
-import clawpack.clawutil.test
-import clawpack.pyclaw.util
+import numpy as np
+
+import clawpack.clawutil.runclaw as runclaw
+import clawpack.clawutil.claw_git_status as claw_git_status
+import clawpack.pyclaw.solution as solution
 
 # Clean library files whenever this module is used
 if "CLAW" in os.environ:
-    CLAW = os.environ["CLAW"]
+    CLAW = Path(os.environ["CLAW"])
 else:
     raise ValueError("Need to set CLAW environment variable.")
 
-for lib_path in [os.path.join(CLAW,"classic","src","1d"),
-                 os.path.join(CLAW,"classic","src","2d"),
-                 os.path.join(CLAW,"classic","src","3d")]:
-    for path in glob.glob(os.path.join(lib_path,"*.o")):
-        os.remove(path)
-    for path in glob.glob(os.path.join(lib_path,"*.mod")):
-        os.remove(path)
+for lib_path in (CLAW / "classic" / "src" / "1d").glob("*.o"):
+    lib_path.unlink()
+for lib_path in (CLAW / "classic" / "src" / "2d").glob("*.o"):
+    lib_path.unlink()
+for lib_path in (CLAW / "classic" / "src" / "2d").glob("*.o"):
+    lib_path.unlink()
 
 
-class ClassicRegressionTest(clawpack.clawutil.test.ClawpackRegressionTest):
+class ClawpackClassicTestRunner:
 
-    r"""Base Classic regression test setup derived from ClawpackRegressionTest
+    def __init__(self, path, caller_path):
 
-    """
+        self.temp_path = path
+        # :TODO: see if there's a way to get this automatically
+        self.test_path = Path(caller_path).parent
+        self.executable_name = 'xclaw'
 
-    __doc__ += clawpack.pyclaw.util.add_parent_doc(
-                                  clawpack.clawutil.test.ClawpackRegressionTest)
+
+    def set_data(self, setrun_module=None):
+
+        sys.path.insert(0, self.test_path)
+        if not setrun_module:
+            setrun_module = 'setrun'
+        if setrun_module in sys.modules:
+            del(sys.modules[setrun_module])
+        setrun = importlib.import_module(setrun_module)
+        self.rundata = setrun.setrun()
+        sys.path.pop(0)
+
+
+    def write_data(self, path=None):
+
+        if not path:
+            path = self.temp_path
+        self.rundata.write(out_dir=path)
+
+
+    def build_executable(self, make_level='default', FFLAGS=None, LFLAGS=None):
+
+        # Assumes GCC CLI
+        if not FFLAGS:
+            FFLAGS = os.environ.get('FFLAGS', "-O2 -fopenmp")
+        if not LFLAGS:
+            LFLAGS = os.environ.get('LFLAGS', FFLAGS)
+
+        if make_level.lower() == "new":
+            cmd = "".join((f"cd {self.test_path} ; make new ",
+                           f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
+        elif make_level.lower() == "default":
+            # clean up *.o and *.mod files in test path only
+            for path in self.test_path.glob("*.o"):
+                path.unlink()
+            for path in self.test_path.glob("*.mod"):
+                path.unlink()
+            cmd = "".join((f"cd {self.test_path} ; make .exe ",
+                           f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
+
+        elif make_level.lower() == "exe":
+            cmd = "".join((f"cd {self.test_path} ; make .exe ",
+                           f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
+        else:
+            raise ValueError(f"Invaled make_level={make_level} given.")
+
+        try:
+            subprocess.run(cmd, shell=True, check=True)
+        except subprocess.CalledProcessError as e:
+            self.clean_up()
+            raise e
+
+        shutil.move(self.test_path / self.executable_name, self.temp_path)
+
+
+    def run_code(self):
+        runclaw.runclaw(xclawcmd=self.temp_path / self.executable_name,
+                        rundir=self.temp_path,
+                        outdir=self.temp_path,
+                        overwrite=True,
+                        restart=False)
+
+
+    def clean_up(self):
+        pass
+
+
+    def check_frame(self, frame, indices=(0), regression_path=None, save=False, **kwargs):
+
+        if not(isinstance(indices, tuple) or isinstance(indices, list)):
+            indices = tuple(indices)
+
+        if not regression_path:
+            regression_path = self.test_path / "regression_data"
+
+        # Load test output data
+        sol = solution.Solution(frame, path=self.temp_path)
+        sol_sums = sol.q[indices, ...].sum(axis=1)
+
+        # Load regression data
+        regression_data = regression_path / f"frame{str(frame).zfill(4)}.txt"
+        if save:
+            np.savetxt(regression_data, sol_sums)
+            claw_git_status.make_git_status_file(outdir=regression_path)
+        regression_sum = np.loadtxt(regression_data)
+
+        # Compare data
+        kwargs.setdefault('rtol', 1e-14)
+        kwargs.setdefault('atol', 1e-8)
+        np.testing.assert_allclose(sol_sums, regression_sum, **kwargs)
