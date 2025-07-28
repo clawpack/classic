@@ -3,7 +3,7 @@ Regression tests for 3D heterogeneous acoustics problem.
 """
 
 from pathlib import Path
-
+import pytest
 import clawpack.classic.test as test
 
 def test_acoustics_3d_heterogeneous(tmp_path: Path, save: bool):

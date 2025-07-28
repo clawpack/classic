@@ -3,7 +3,7 @@ Regression tests for 2D advection on an annulus.
 """
 
 from pathlib import Path
-
+import pytest
 import clawpack.classic.test as test
 
 def test_advection_2d_annulus(tmp_path: Path, save: bool):
