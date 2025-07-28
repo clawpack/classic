@@ -2,14 +2,13 @@
 Regression tests for 2D advection on an annulus.
 """
 
-import sys
-import pytest
+from pathlib import Path
 
 import clawpack.classic.test as test
 
-def test_advection_2d_annulus(tmp_path, save):
+def test_advection_2d_annulus(tmp_path: Path, save: bool):
 
-    ctr = test.ClawpackClassicTestRunner(tmp_path, __file__)
+    ctr = test.ClawpackClassicTestRunner(tmp_path)
 
     ctr.set_data()
     ctr.rundata.clawdata.num_output_times = 2

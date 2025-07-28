@@ -2,14 +2,13 @@
 Regression tests for a 1D heterogeneous acoustics test
 """
 
-import sys
-import pytest
+from pathlib import Path
 
 import clawpack.classic.test as test
 
-def test_acoustics_1d_heterogeneous(tmp_path, save):
+def test_acoustics_1d_heterogeneous(tmp_path: Path, save: bool):
 
-    ctr = test.ClawpackClassicTestRunner(tmp_path, __file__)
+    ctr = test.ClawpackClassicTestRunner(tmp_path)
 
     ctr.set_data()
     ctr.rundata.clawdata.num_output_times = 2

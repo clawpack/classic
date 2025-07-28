@@ -11,9 +11,10 @@ import os
 import sys
 import subprocess
 import importlib
-import inspect
 import shutil
-import pytest
+import inspect
+import random
+import string
 
 import numpy as np
 
@@ -32,30 +33,32 @@ for lib_path in (CLAW / "classic" / "src" / "1d").glob("*.o"):
     lib_path.unlink()
 for lib_path in (CLAW / "classic" / "src" / "2d").glob("*.o"):
     lib_path.unlink()
-for lib_path in (CLAW / "classic" / "src" / "2d").glob("*.o"):
+for lib_path in (CLAW / "classic" / "src" / "3d").glob("*.o"):
     lib_path.unlink()
-
 
 class ClawpackClassicTestRunner:
 
-    def __init__(self, path, caller_path):
+    def __init__(self, path: Path):
 
         self.temp_path = path
-        # :TODO: see if there's a way to get this automatically
-        self.test_path = Path(caller_path).parent
+        self.test_path = Path(Path(inspect.stack()[1].filename).absolute()).parent
         self.executable_name = 'xclaw'
 
 
-    def set_data(self, setrun_module=None):
+    def set_data(self, setrun_path: Path = None):
+        r"""Set the rundata for the test."""
 
-        sys.path.insert(0, self.test_path)
-        if not setrun_module:
-            setrun_module = 'setrun'
-        if setrun_module in sys.modules:
-            del(sys.modules[setrun_module])
-        setrun = importlib.import_module(setrun_module)
-        self.rundata = setrun.setrun()
-        sys.path.pop(0)
+        if not setrun_path:
+            setrun_path = self.test_path / "setrun.py"
+
+        mod_name = '_'.join(("setrun",
+                             "".join(random.choices(string.ascii_letters
+                                                    + string.digits, k=32))))
+        spec = importlib.util.spec_from_file_location(mod_name, setrun_path)
+        setrun_module = importlib.util.module_from_spec(spec)
+        sys.modules[mod_name] = setrun_module
+        spec.loader.exec_module(setrun_module)
+        self.rundata = setrun_module.setrun()
 
 
     def write_data(self, path=None):
@@ -101,6 +104,9 @@ class ClawpackClassicTestRunner:
 
 
     def run_code(self):
+        print(f"clawcmd={self.temp_path / self.executable_name}")
+        print(f"rundir={self.temp_path}")
+        print(f"outdir={self.temp_path}")
         runclaw.runclaw(xclawcmd=self.temp_path / self.executable_name,
                         rundir=self.temp_path,
                         outdir=self.temp_path,
@@ -141,12 +147,12 @@ class ClawpackClassicTestRunner:
         r"""Basic test to assert gauge equality
 
         :Input:
-         - *save* (bool) - If *True* will save the output from this test to 
+         - *save* (bool) - If *True* will save the output from this test to
            the file *regresion_data.txt*.  Default is *False*.
-         - *indices* (tuple) - Contains indices to compare in the gague 
+         - *indices* (tuple) - Contains indices to compare in the gague
            comparison.  Defaults to *(0)*.
-         - *rtol* (float) - Relative tolerance used in the comparison, default 
-           is *1e-14*.  Note that the old *tolerance* input is now synonymous 
+         - *rtol* (float) - Relative tolerance used in the comparison, default
+           is *1e-14*.  Note that the old *tolerance* input is now synonymous
            with this parameter.
          - *atol* (float) - Absolute tolerance used in the comparison, default
            is *1e-08*.
@@ -174,15 +180,15 @@ class ClawpackClassicTestRunner:
         try:
             for n in indices:
                 np.testing.assert_allclose(gauge.q[n, :],
-                                              regression_gauge.q[n, :], 
+                                              regression_gauge.q[n, :],
                                               **kwargs)
         except AssertionError as e:
-            err_msg = "\n".join((e.args[0], 
+            err_msg = "\n".join((e.args[0],
                                 "Gauge Match Failed for gauge = %s" % gauge_id))
             err_msg = "\n".join((err_msg, "  failures in fields:"))
             failure_indices = []
             for n in indices:
-                if ~np.allclose(gauge.q[n, :], regression_gauge.q[n, :], 
+                if ~np.allclose(gauge.q[n, :], regression_gauge.q[n, :],
                                 **kwargs):
                     failure_indices.append(str(n))
             index_str = ", ".join(failure_indices)
