@@ -2,49 +2,28 @@
 Regression tests for 3D heterogeneous acoustics problem.
 """
 
-import sys
-import unittest
-
+from pathlib import Path
+import pytest
 import clawpack.classic.test as test
 
-
-class Acoustics3DHeterogeneousTest(test.ClassicRegressionTest):
+def test_acoustics_3d_heterogeneous(tmp_path: Path, save: bool):
     r"""Basic test for a 3D heterogeneous acoustics test."""
 
+    ctr = test.ClawpackClassicTestRunner(tmp_path)
 
-    def runTest(self, save=False):
+    ctr.set_data()
+    ctr.rundata.clawdata.num_cells = [20, 20, 20]
+    ctr.rundata.clawdata.num_output_times = 2
+    ctr.rundata.clawdata.tfinal = 1.0
+    ctr.write_data()
 
-        # Write out data files
-        self.load_rundata()
+    ctr.executable_name = 'xclaw'
+    ctr.build_executable()
 
-        self.rundata.clawdata.num_cells = [20, 20, 20]
-        self.rundata.clawdata.num_output_times = 2
-        self.rundata.clawdata.tfinal = 1.0
+    ctr.run_code()
 
-        self.write_rundata_objects()
+    ctr.check_frame(1, indices=(0, 1, 2), save=save)
+    ctr.check_frame(2, indices=(0, 1, 2), save=save)
 
-        # Run code
-        self.run_code()
-
-        # Perform tests
-        self.check_frame(save=save, indices=[0, 1, 2], frame_num=1,
-                         file_name='regression_data_test2.txt')
-        self.check_frame(save=save, indices=[0, 1, 2], frame_num=2,
-                         file_name='regression_data_test3.txt')
-
-        self.success = True
-
-
-
-if __name__=="__main__":
-    if len(sys.argv) > 1:
-        if bool(sys.argv[1]):
-            # Fake the setup and save out output
-            test = Acoustics3DHeterogeneousTest()
-            try:
-                test.setUp()
-                test.runTest(save=True)
-            finally:
-                test.tearDown()
-            sys.exit(0)
-    unittest.main()
+if __name__ == "__main__":
+    pytest.main([__file__])
