@@ -1,9 +1,8 @@
 r"""
-Execute nosetests in all subdirectories, to run a series of quick
-regression tests.
+Defines the Classic Clawpack Test Runner class for running PyTest based
+regression tests in classic clawpack.
 
-Sends output and result/errors to separate files to simplify checking
-results and looking for errors.
+Refer to the documentation for PyTest to manage output and reporting.
 """
 
 from pathlib import Path
@@ -24,7 +23,7 @@ for lib_path in (CLAW / "classic" / "src" / "2d").glob("*.o"):
 for lib_path in (CLAW / "classic" / "src" / "3d").glob("*.o"):
     lib_path.unlink()
 
-class ClawpackClassicTestRunner(test.ClawpackTestRunner):
+class ClassicTestRunner(test.ClawpackTestRunner):
 
     def __init__(self, path: Path):
-        super(ClawpackClassicTestRunner, self).__init__(path)
+        super(ClassicTestRunner, self).__init__(path)

@@ -9,7 +9,7 @@ import clawpack.classic.test as test
 def test_acoustics_3d_heterogeneous(tmp_path: Path, save: bool):
     r"""Basic test for a 3D heterogeneous acoustics test."""
 
-    ctr = test.ClawpackClassicTestRunner(tmp_path)
+    ctr = test.ClassicTestRunner(tmp_path)
 
     ctr.set_data()
     ctr.rundata.clawdata.num_cells = [20, 20, 20]

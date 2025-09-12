@@ -8,7 +8,7 @@ import clawpack.classic.test as test
 
 def test_acoustics_1d_heterogeneous(tmp_path: Path, save: bool):
 
-    ctr = test.ClawpackClassicTestRunner(tmp_path)
+    ctr = test.ClassicTestRunner(tmp_path)
 
     ctr.set_data()
     ctr.rundata.clawdata.num_output_times = 2
