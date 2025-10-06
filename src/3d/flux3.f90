@@ -203,7 +203,7 @@
 !     # aux2(1-num_ghost,1,2) is the start of a 1d array now used by rpn3
 
     call rpn3(ixyz,maxm,num_eqn,num_waves,num_aux,num_ghost,mx,q1d,q1d, &
-    aux2(1,1-num_ghost,2),aux2(1,1-num_ghost,2), &
+    aux2(:,1-num_ghost,2),aux2(:,1-num_ghost,2), &
     wave,s,amdq,apdq)
 
 
@@ -610,5 +610,3 @@
 
     return
     end subroutine flux3
-
-
