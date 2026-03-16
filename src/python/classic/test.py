@@ -1,37 +1,23 @@
 r"""
-Execute nosetests in all subdirectories, to run a series of quick
-regression tests.
+Defines the Classic Clawpack Test Runner class for running PyTest based
+regression tests in classic clawpack.
 
-Sends output and result/errors to separate files to simplify checking
-results and looking for errors.
+Refer to the documentation for PyTest to manage output and reporting.
 """
 
+from pathlib import Path
+from typing import Optional
 import os
-import glob
 
-import clawpack.clawutil.test
-import clawpack.pyclaw.util
+import clawpack.clawutil.test as test
 
 # Clean library files whenever this module is used
 if "CLAW" in os.environ:
-    CLAW = os.environ["CLAW"]
+    CLAW = Path(os.environ["CLAW"])
 else:
     raise ValueError("Need to set CLAW environment variable.")
 
-for lib_path in [os.path.join(CLAW,"classic","src","1d"),
-                 os.path.join(CLAW,"classic","src","2d"),
-                 os.path.join(CLAW,"classic","src","3d")]:
-    for path in glob.glob(os.path.join(lib_path,"*.o")):
-        os.remove(path)
-    for path in glob.glob(os.path.join(lib_path,"*.mod")):
-        os.remove(path)
+class ClassicTestRunner(test.ClawpackTestRunner):
 
-
-class ClassicRegressionTest(clawpack.clawutil.test.ClawpackRegressionTest):
-
-    r"""Base Classic regression test setup derived from ClawpackRegressionTest
-
-    """
-
-    __doc__ += clawpack.pyclaw.util.add_parent_doc(
-                                  clawpack.clawutil.test.ClawpackRegressionTest)
+    def __init__(self, path: Path, test_path: Optional[Path]=None):
+        super(ClassicTestRunner, self).__init__(path, test_path=test_path)
