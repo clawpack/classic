@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 import clawpack.classic.test as test
 
+@pytest.mark.regression
 def test_advection_2d_annulus(tmp_path: Path, save: bool):
 
     ctr = test.ClassicTestRunner(tmp_path)
