@@ -26,4 +26,4 @@ def test_acoustics_3d_heterogeneous(tmp_path: Path, save: bool):
     ctr.check_frame(2, indices=(0, 1, 2), save=save)
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    raise SystemExit(pytest.main([__file__]))

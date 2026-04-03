@@ -24,4 +24,4 @@ def test_advection_2d_annulus(tmp_path: Path, save: bool):
     ctr.check_frame(2, save=save)
 
 if __name__=="__main__":
-    pytest.main([__file__])
+    raise SystemExit(pytest.main([__file__]))
