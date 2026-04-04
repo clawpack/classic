@@ -1,10 +1,11 @@
-name: Test Classic
+name: Test Classic Clawpack
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,43 +14,101 @@ env:
   CLAW: ${{ github.workspace }}
 
 jobs:
-  build:
+  python-lint:
+    name: >
+      python-lint - ubuntu-latest - py ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    steps:
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install gfortran
-        python -m pip install --upgrade pip
-        pip install flake8 meson-python ninja pytest numpy
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
 
-    - name: Checkout clawpack
-      uses: actions/checkout@v4.1.5
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6.2.0
       with:
-        repository: clawpack/clawpack
-        submodules: true
-    - name: Checkout classic branch
-      uses: actions/checkout@v4.1.5
-      with:
-        repository: clawpack/classic
-        path: classic    
-    - name: Install clawpack
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install python dependencies
       run: |
-        pip install --no-build-isolation --editable $CLAW
-        # pip install --user -e $CLAW
+        python -m pip install --upgrade pip
+        pip install flake8
+
+    - name: Checkout Classic branch
+      uses: actions/checkout@v6.0.2
 
     - name: Lint with flake8
       run: |
-        cd ${CLAW}/classic
+        cd ${CLAW}
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+
+  regression-tests:
+    name: >
+      regression - ${{ matrix.os }} - ${{ matrix.toolchain.compiler }} ${{ matrix.build }} - py ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        build: [debug, opt]
+        python-version: ['3.12']
+        toolchain:
+          - {compiler: gcc, version: 14}
+          - {compiler: gcc, version: 15}
+        exclude:
+          - os: ubuntu-latest
+            toolchain: {compiler: gcc, version: 15}
+          - os: macos-latest
+            toolchain: {compiler: gcc, version: 14}
+
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6.2.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Set up compilers
+      uses: fortran-lang/setup-fortran@v1.9.0
+      id: setup-fortran
+      with:
+        compiler: ${{ matrix.toolchain.compiler }}
+        version: ${{ matrix.toolchain.version }}
+
+    - name: Install python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 meson-python ninja pytest numpy
+
+    - name: Checkout Clawpack
+      uses: actions/checkout@v6.0.2
+      with:
+        repository: clawpack/clawpack
+        submodules: true
+
+    - name: Checkout Classic branch
+      uses: actions/checkout@v6.0.2
+      with:
+        path: classic
+
+    - name: Install clawpack python
+      run: |
+        pip install --no-build-isolation --editable .
+
+    - name: Run regression tests
       run: |
         cd ${CLAW}/classic
-        pytest
+        source .github/scripts/set_test_env.sh regression "${{ matrix.toolchain.compiler }}" "${{ matrix.build }}"
+        echo "FFLAGS: $FFLAGS"
+        echo "OMP_NUM_THREADS: $OMP_NUM_THREADS"
+        pytest --basetemp=${CLAW}/classic/pytest_tmp -vv -s -o addopts="" -m "regression"
+
+    - name: Upload test results
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: test_results_${{ matrix.os }}_${{ matrix.toolchain.compiler }}_${{ matrix.build }}
+        path: ${{ env.CLAW }}/classic/pytest_tmp
+        if-no-files-found: ignore
