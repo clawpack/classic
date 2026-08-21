@@ -11,6 +11,8 @@ c                 http://www.amath.washington.edu/~claw/doc.html
 c
 c     Authors: Randall J. LeVeque, Grady I. Lemoine
 c
+      use abl_module, only: initialize_abl=>initialize
+ 
       implicit double precision (a-h,o-z)
       external bc2,rpn2,rpt2,src2,b4step2
 
@@ -232,6 +234,9 @@ c     # Allocate q
          print *, '*** Error allocating q array; exiting claw2ez'
          go to 900
       end if
+
+c     # initialize abl module
+      call initialize_abl()
 
 c
 c     # set initial conditions:
